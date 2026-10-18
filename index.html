@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lecture Tracker — Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f8faff;
+    --border: #e4e9f2; --text: #0f1729; --text-muted: #6b7a99;
+    --primary: #4f46e5; --primary-hover: #4338ca; --primary-soft: #eef2ff;
+    --success: #10b981; --success-soft: #ecfdf5;
+    --danger: #ef4444; --danger-soft: #fef2f2;
+    --warning: #f59e0b; --warning-soft: #fffbeb;
+    --gold: #f59e0b;
+    --shadow-sm: 0 1px 2px rgba(15,23,41,0.06);
+    --shadow: 0 4px 16px -4px rgba(15,23,41,0.08);
+    --shadow-lg: 0 20px 40px -12px rgba(15,23,41,0.18);
+    --radius: 14px; --radius-lg: 20px;
+  }
+  [data-theme="dark"] {
+    --bg: #0b1020; --surface: #151b2e; --surface-2: #1a2238;
+    --border: #26304a; --text: #e8ecf5; --text-muted: #8b97b5;
+    --primary: #818cf8; --primary-hover: #a5b4fc; --primary-soft: #1e2647;
+    --success: #34d399; --success-soft: #0f2f26;
+    --danger: #f87171; --danger-soft: #2d1519;
+    --warning: #fbbf24; --warning-soft: #2d2310;
+    --gold: #fbbf24;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s, color 0.2s;
+  }
+  button, input, select { font-family: inherit; font-size: inherit; color: inherit; }
+  button { cursor: pointer; border: none; background: none; }
+  input, select { outline: none; }
+
+  /* CRITICAL FIX: SVGs inside buttons should never swallow clicks */
+  button svg, .mini-btn svg, .icon-btn svg, .btn svg, .checkbox svg,
+  .star-btn svg, .lecture-del svg, .add-lecture-btn svg, .subject-chevron svg {
+    pointer-events: none;
+  }
+
+  .app { max-width: 1180px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), #7c3aed);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 20px;
+    box-shadow: 0 6px 16px -4px rgba(79,70,229,0.5);
+  }
+  .brand h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand p { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); transition: all 0.15s; box-shadow: var(--shadow-sm);
+  }
+  .icon-btn:hover { color: var(--primary); border-color: var(--primary); }
+  .icon-btn.active { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); }
+
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm);
+  }
+  .stat-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-value { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+  .stat-value small { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+  .stat-value.success { color: var(--success); }
+  .stat-value.primary { color: var(--primary); }
+  .stat-value.warning { color: var(--warning); }
+  .stat-value.streak { color: var(--gold); }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
+  .search-wrap input {
+    width: 100%; padding: 11px 14px 11px 40px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-sm); transition: all 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .search-wrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--text-muted); pointer-events: none; }
+  .filter-chips { display: flex; gap: 4px; background: var(--surface); padding: 4px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); flex-wrap: wrap; }
+  .chip { padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); transition: all 0.15s; white-space: nowrap; }
+  .chip:hover { color: var(--text); }
+  .chip.active { background: var(--primary); color: #fff; }
+  .sort-select {
+    padding: 10px 32px 10px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; font-size: 13px; font-weight: 600; color: var(--text);
+    box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.15s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7a99' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+  .sort-select:focus { border-color: var(--primary); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px; border-radius: 12px; font-size: 14px;
+    font-weight: 600; transition: all 0.15s; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 6px 16px -6px rgba(79,70,229,0.6); }
+  .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); box-shadow: var(--shadow-sm); }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .subjects { display: flex; flex-direction: column; gap: 16px; }
+  .subject-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .subject-card.complete { border-color: rgba(16,185,129,0.35); }
+  .subject-card.enter { animation: slideIn 0.25s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .subject-header {
+    padding: 18px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; transition: background 0.15s;
+  }
+  .subject-header:hover { background: var(--surface-2); }
+  .subject-card.collapsed .subject-header { border-bottom-color: transparent; }
+  .subject-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .subject-card.collapsed .subject-top { margin-bottom: 10px; }
+
+  .subject-chevron {
+    width: 24px; height: 24px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), color 0.15s;
+  }
+  .subject-chevron svg { width: 16px; height: 16px; }
+  .subject-card.collapsed .subject-chevron { transform: rotate(-90deg); }
+  .subject-header:hover .subject-chevron { color: var(--primary); }
+
+  .subject-avatar {
+    width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 17px; color: #fff;
+  }
+  .subject-info { flex: 1; min-width: 0; }
+  .subject-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .subject-meta { font-size: 12.5px; color: var(--text-muted); font-weight: 500; margin-top: 2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .attention-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--danger-soft); color: var(--danger);
+    padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 700;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .subject-actions { display: flex; gap: 4px; flex-shrink: 0; position: relative; z-index: 2; }
+  .mini-btn {
+    width: 32px; height: 32px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); transition: all 0.15s; cursor: pointer;
+    pointer-events: auto;
+  }
+  .mini-btn:hover { background: var(--surface-2); color: var(--text); }
+  .mini-btn.danger:hover { background: var(--danger-soft); color: var(--danger); }
+  .mini-btn svg { width: 15px; height: 15px; }
+
+  .progress-track { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; position: relative; }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--primary), #7c3aed);
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .progress-fill.complete { background: linear-gradient(90deg, var(--success), #059669); }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 8px; }
+
+  .subject-body {
+    display: grid; grid-template-rows: 1fr;
+    transition: grid-template-rows 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .subject-body.collapsed { grid-template-rows: 0fr; }
+  .subject-body-inner { overflow: hidden; min-height: 0; transition: visibility 0s; }
+  .subject-body.collapsed .subject-body-inner { visibility: hidden; transition: visibility 0s linear 0.3s; }
+
+  .lecture-list { padding: 6px 12px 12px; }
+  .lecture-row {
+    display: grid;
+    grid-template-columns: 28px 24px 1fr auto 32px;
+    align-items: center; gap: 10px;
+    padding: 10px; border-radius: 12px;
+    transition: background 0.12s;
+  }
+  .lecture-row:hover { background: var(--surface-2); }
+  .lecture-row.done .lecture-title { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--text-muted); }
+
+  .checkbox {
+    width: 22px; height: 22px; border-radius: 7px;
+    border: 2px solid var(--border); background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+  }
+  .checkbox:hover { border-color: var(--primary); }
+  .checkbox.checked { background: var(--success); border-color: var(--success); }
+  .checkbox svg { width: 13px; height: 13px; color: #fff; opacity: 0; transform: scale(0.5); transition: all 0.15s; }
+  .checkbox.checked svg { opacity: 1; transform: scale(1); }
+
+  .star-btn {
+    width: 24px; height: 24px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--border); transition: all 0.15s; cursor: pointer;
+    flex-shrink: 0; font-size: 16px; line-height: 1;
+  }
+  .star-btn:hover { color: var(--gold); transform: scale(1.15); }
+  .star-btn.active { color: var(--gold); }
+
+  .lecture-title {
+    font-size: 14px; font-weight: 600; padding: 4px 0;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; border-bottom: 1.5px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .lecture-title[contenteditable="true"]:focus { outline: none; border-bottom-color: var(--primary); white-space: normal; }
+
+  .date-field { display: flex; flex-direction: column; gap: 3px; }
+  .date-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .date-input {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 8px; font-size: 12.5px;
+    font-weight: 500; transition: all 0.15s; width: 138px;
+    color: var(--text);
+  }
+  .date-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
+  .date-input:disabled { opacity: 0.45; cursor: not-allowed; background: var(--surface-2); }
+  .date-input.overdue { border-color: var(--danger); color: var(--danger); font-weight: 600; }
+  .date-input.today { border-color: var(--warning); color: var(--warning); font-weight: 600; }
+
+  .lecture-del {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); opacity: 0; transition: all 0.15s; cursor: pointer;
+  }
+  .lecture-row:hover .lecture-del, .lecture-row:focus-within .lecture-del, .lecture-del:focus-visible { opacity: 1; }
+  .lecture-del:hover { background: var(--danger-soft); color: var(--danger); }
+  .lecture-del svg { width: 15px; height: 15px; }
+
+  .add-lecture-row { padding: 4px 22px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .add-lecture-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+    padding: 7px 12px; border-radius: 9px; transition: all 0.15s; cursor: pointer;
+  }
+  .add-lecture-btn:hover { color: var(--primary); background: var(--primary-soft); }
+  .add-lecture-btn.danger:hover { color: var(--danger); background: var(--danger-soft); }
+  .add-lecture-btn svg { width: 14px; height: 14px; }
+
+  .empty {
+    text-align: center; padding: 64px 24px;
+    background: var(--surface); border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+  }
+  .empty-icon {
+    width: 64px; height: 64px; border-radius: 18px; margin: 0 auto 18px;
+    background: var(--primary-soft); display: flex;
+    align-items: center; justify-content: center; color: var(--primary);
+  }
+  .empty-icon svg { width: 30px; height: 30px; }
+  .empty h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .empty p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+  .empty .btn { margin: 0 auto; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(10,15,30,0.5);
+    backdrop-filter: blur(4px); display: none;
+    align-items: center; justify-content: center; padding: 20px; z-index: 100;
+    animation: fadeIn 0.15s ease;
+  }
+  .overlay.open { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    width: 100%; max-width: 460px; box-shadow: var(--shadow-lg);
+    animation: popIn 0.2s cubic-bezier(0.4,0,0.2,1);
+    border: 1px solid var(--border);
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal-head { padding: 22px 24px 4px; }
+  .modal-head h3 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+  .modal-head p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .field input {
+    padding: 11px 14px; background: var(--surface-2);
+    border: 1.5px solid var(--border); border-radius: 11px;
+    font-size: 14px; font-weight: 500; transition: all 0.15s;
+  }
+  .field input:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .field-hint { font-size: 12px; color: var(--text-muted); margin-top: -2px; }
+  .modal-foot { padding: 8px 24px 22px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+  .shortcuts-modal { max-width: 520px; }
+  .shortcut-list { display: flex; flex-direction: column; gap: 2px; }
+  .shortcut-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+  .shortcut-row:last-child { border-bottom: none; }
+  .shortcut-row span:first-child { color: var(--text-muted); font-weight: 500; }
+  .kbd {
+    display: inline-block; padding: 3px 8px; border-radius: 6px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-family: 'SF Mono', Menlo, monospace; font-size: 11.5px;
+    font-weight: 700; color: var(--text); min-width: 24px; text-align: center;
+  }
+
+  .toast-wrap {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 8px; z-index: 200;
+    pointer-events: none; align-items: center;
+  }
+  .toast {
+    background: var(--text); color: var(--bg);
+    padding: 11px 18px; border-radius: 11px; font-size: 13.5px;
+    font-weight: 600; box-shadow: var(--shadow-lg);
+    display: flex; align-items: center; gap: 10px;
+    pointer-events: auto; animation: toastIn 0.25s ease;
+    max-width: 90vw; position: relative; overflow: hidden;
+  }
+  [data-theme="dark"] .toast { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .toast button { color: var(--primary); font-weight: 700; font-size: 13px; padding: 2px 4px; cursor: pointer; pointer-events: auto; }
+  .toast .undo-bar { width: 100%; height: 2px; background: var(--primary); position: absolute; bottom: 0; left: 0; border-radius: 0 0 11px 11px; }
+
+  @media (max-width: 720px) {
+    .app { padding: 16px 12px 80px; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); }
+    .stat-value { font-size: 20px; }
+    .stat-label { font-size: 10.5px; }
+    .lecture-row {
+      grid-template-columns: 24px 22px 1fr 32px;
+      grid-template-areas:
+        "check star title del"
+        "check star dates dates";
+      row-gap: 6px;
+    }
+    .lecture-row .checkbox { grid-area: check; align-self: start; margin-top: 4px; }
+    .lecture-row .star-btn { grid-area: star; align-self: start; margin-top: 3px; }
+    .lecture-row .lecture-title { grid-area: title; }
+    .lecture-row .dates-group { grid-area: dates; display: flex; gap: 8px; flex-wrap: wrap; }
+    .lecture-row .lecture-del { grid-area: del; align-self: start; opacity: 1; }
+    .date-input { width: 100%; min-width: 0; flex: 1; }
+    .date-field { flex: 1; min-width: 110px; }
+    .toolbar { gap: 8px; }
+    .search-wrap { max-width: none; }
+    .toggle-all-btn span { display: none; }
+    .toggle-all-btn { padding: 11px 14px; }
+    .sort-select { flex: 1; }
+  }
+  @media (max-width: 480px) {
+    .brand h1 { font-size: 17px; }
+    .subject-top { flex-wrap: wrap; }
+    .filter-chips { flex: 1; }
+    .chip { flex: 1; text-align: center; padding: 7px 6px; font-size: 11.5px; }
+    .subject-actions { order: 10; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .subject-header:focus-visible, .checkbox:focus-visible, .star-btn:focus-visible,
+  .chip:focus-visible, .btn:focus-visible, .icon-btn:focus-visible, .mini-btn:focus-visible,
+  .add-lecture-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .subject-header:focus-visible { outline-offset: -2px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  .sync-btn { padding: 9px 14px; font-size: 13px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+  .sync-btn.ok .sync-dot { background: var(--success); }
+  .sync-btn.syncing .sync-dot { background: var(--warning); animation: pulse 1.2s ease-in-out infinite; }
+  .sync-btn.err .sync-dot { background: var(--danger); }
+  .auth-error { color: var(--danger); font-size: 13px; font-weight: 600; }
+  .auth-error:empty { display: none; }
+  .auth-link { align-self: flex-start; font-size: 13px; font-weight: 600; color: var(--primary); padding: 2px 0; }
+  .auth-link:hover { text-decoration: underline; }
+
+  .hidden { display: none !important; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">L</div>
+      <div>
+        <h1>Lecture Tracker</h1>
+        <p>Stay on top of every class</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost sync-btn" id="syncBtn" title="Cloud sync / account" aria-label="Cloud sync and account">
+        <span class="sync-dot"></span><span id="syncLabel">Local only</span>
+      </button>
+      <button class="icon-btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
+      </button>
+      <button class="icon-btn" id="importBtn" title="Import from JSON file" aria-label="Import data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      </button>
+      <button class="icon-btn" id="exportBtn" title="Export to JSON file" aria-label="Export data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      </button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="btn btn-primary" id="newSubjectBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New Subject
+      </button>
+    </div>
+  </header>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Subjects</div>
+      <div class="stat-value primary" id="statSubjects">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Lectures</div>
+      <div class="stat-value" id="statLectures">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value success" id="statDone">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Progress</div>
+      <div class="stat-value warning" id="statProgress">0<small>%</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">🔥 Streak</div>
+      <div class="stat-value streak" id="statStreak">0<small>d</small></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="searchInput" placeholder="Search subjects or lectures…" autocomplete="off">
+    </div>
+    <div class="filter-chips" id="filterChips">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="active">Active</button>
+      <button class="chip" data-filter="done">Done</button>
+      <button class="chip" data-filter="overdue">Overdue</button>
+      <button class="chip" data-filter="starred">★</button>
+    </div>
+    <select class="sort-select" id="sortSelect" title="Sort subjects">
+      <option value="manual">Default order</option>
+      <option value="name">Name (A–Z)</option>
+      <option value="progress">Progress ↑</option>
+      <option value="due">Due date</option>
+    </select>
+    <button class="btn btn-ghost toggle-all-btn" id="toggleAllBtn" title="Expand or collapse all subjects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
+      <span id="toggleAllText">Expand all</span>
+    </button>
+  </div>
+
+  <div class="subjects" id="subjectsContainer"></div>
+</div>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modalTitle">New Subject</h3>
+      <p id="modalSubtitle">Add a subject and choose how many lectures it has.</p>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="modalSubjectName">Subject name</label>
+        <input type="text" id="modalSubjectName" placeholder="e.g. Linear Algebra" autocomplete="off">
+      </div>
+      <div class="field" id="countField">
+        <label for="modalLectureCount">Number of lectures</label>
+        <input type="number" id="modalLectureCount" value="8" min="1" max="200">
+        <div class="field-hint">You can add or remove lectures later.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn btn-primary" id="modalConfirm">Create Subject</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="shortcutsOverlay">
+  <div class="modal shortcuts-modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3>Keyboard shortcuts</h3>
+      <p>Work faster.</p>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-list">
+        <div class="shortcut-row"><span>New subject</span><span class="kbd">N</span></div>
+        <div class="shortcut-row"><span>Focus search</span><span class="kbd">/</span></div>
+        <div class="shortcut-row"><span>Toggle expand all</span><span><span class="kbd">Ctrl</span> <span class="kbd">E</span></span></div>
+        <div class="shortcut-row"><span>Show shortcuts</span><span class="kbd">?</span></div>
+        <div class="shortcut-row"><span>Close / blur</span><span class="kbd">Esc</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" id="shortcutsClose">Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="authOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="modal-head">
+      <h3 id="authTitle">Sign in to sync</h3>
+      <p id="authSub">Save your data online and use it on any device.</p>
+    </div>
+    <div class="modal-body" id="authFormBody">
+      <div class="field">
+        <label for="authEmail">Email</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="At least 6 characters">
+      </div>
+      <div class="auth-error" id="authError" role="alert"></div>
+      <button type="button" class="btn btn-ghost" id="authGoogle">Continue with Google</button>
+      <button type="button" class="auth-link" id="authForgot">Forgot password?</button>
+    </div>
+    <div class="modal-body hidden" id="authAccountBody">
+      <div class="field">
+        <label>Signed in as</label>
+        <div id="authAccountEmail" style="font-weight:600;word-break:break-all"></div>
+        <div class="field-hint">Your lectures sync automatically on every device where you sign in.</div>
+      </div>
+    </div>
+    <div class="modal-foot" id="authFormFoot">
+      <button type="button" class="btn btn-ghost" id="authCancel">Close</button>
+      <button type="button" class="btn btn-ghost" id="authSignUp">Create account</button>
+      <button type="button" class="btn btn-primary" id="authSignIn">Sign in</button>
+    </div>
+    <div class="modal-foot hidden" id="authAccountFoot">
+      <button type="button" class="btn btn-ghost" id="authClose2">Close</button>
+      <button type="button" class="btn btn-ghost" id="authSignOut">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<input type="file" id="importFile" accept="application/json" style="display:none">
+
+<script>
+/* =====================================================================
+   CLOUD SETUP — paste YOUR Firebase web-app config here (see the guide).
+   While apiKey still says PASTE_..., the app works in local-only mode.
+   This config is NOT a secret; your Firestore security rules protect data.
+   ===================================================================== */
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+const FIREBASE_SDK_VERSION = '10.12.2';
+
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'lecture_tracker_pro_v3';
+  const THEME_KEY = 'lecture_tracker_theme_v1';
+  const SUBJECT_COLORS = [
+    ['#4f46e5', '#7c3aed'], ['#0ea5e9', '#0284c7'], ['#10b981', '#059669'],
+    ['#f59e0b', '#d97706'], ['#ef4444', '#dc2626'], ['#8b5cf6', '#7c3aed'],
+    ['#ec4899', '#db2777'], ['#14b8a6', '#0d9488'], ['#f97316', '#ea580c'],
+    ['#6366f1', '#4f46e5']
+  ];
+
+  let firstPaint = true;
+  let saveWarned = false;
+  let state = {
+    subjects: [],
+    expanded: {},
+    filter: 'all',
+    search: '',
+    sort: 'manual'
+  };
+
+  function uid(p = 'id') { return p + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+  function fmtLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function todayISO() { return fmtLocal(new Date()); }
+  function dayOffset(n) { const d = new Date(); d.setDate(d.getDate() + n); return fmtLocal(d); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && Array.isArray(p.subjects)) state.subjects = p.subjects.map(normalizeSubject);
+      }
+    } catch (e) { console.warn('load failed', e); }
+
+    if (!state.subjects.length) {
+      state.subjects = [
+        makeSubject('Data Structures & Algorithms', 6, [
+          { title: 'Big-O Analysis', done: true, completedDate: dayOffset(-6), targetDate: dayOffset(-4), starred: true },
+          { title: 'Arrays & Dynamic Arrays', done: true, completedDate: dayOffset(-4), targetDate: dayOffset(-2) },
+          { title: 'Linked Lists', done: false, completedDate: '', targetDate: dayOffset(1) },
+          { title: 'Stacks & Queues', done: false, completedDate: '', targetDate: todayISO() },
+          { title: 'Hash Tables', done: false, completedDate: '', targetDate: dayOffset(5) },
+          { title: 'Trees & BST', done: false, completedDate: '', targetDate: dayOffset(8), starred: true }
+        ]),
+        makeSubject('Linear Algebra', 4, [
+          { title: 'Vector Spaces', done: true, completedDate: dayOffset(-3), targetDate: dayOffset(-1) },
+          { title: 'Matrix Operations', done: false, completedDate: '', targetDate: dayOffset(2) },
+          { title: 'Eigenvalues', done: false, completedDate: '', targetDate: dayOffset(6) },
+          { title: 'SVD', done: false, completedDate: '', targetDate: dayOffset(10) }
+        ])
+      ];
+      save();
+    }
+  }
+
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const cleanDate = v => (typeof v === 'string' && DATE_RE.test(v)) ? v : '';
+  const cleanId = (v, p) => (typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v)) ? v : uid(p);
+
+  function normalizeSubject(s) {
+    s = (s && typeof s === 'object') ? s : {};
+    return {
+      id: cleanId(s.id, 'sub'),
+      name: String(s.name || 'Untitled Subject').slice(0, 200),
+      colorIndex: Number.isInteger(s.colorIndex) && s.colorIndex >= 0 ? s.colorIndex : Math.floor(Math.random() * SUBJECT_COLORS.length),
+      lectures: Array.isArray(s.lectures) ? s.lectures.filter(l => l && typeof l === 'object').map(l => ({
+        id: cleanId(l.id, 'lec'),
+        title: String(l.title || 'Untitled Lecture').slice(0, 300),
+        done: !!l.done,
+        completedDate: cleanDate(l.completedDate),
+        targetDate: cleanDate(l.targetDate),
+        starred: !!l.starred
+      })) : []
+    };
+  }
+
+  function makeSubject(name, count, seed) {
+    const colorIndex = Math.floor(Math.random() * SUBJECT_COLORS.length);
+    const lectures = [];
+    for (let i = 0; i < count; i++) {
+      const x = seed && seed[i];
+      lectures.push({
+        id: uid('lec'),
+        title: x ? x.title : `Lecture ${i + 1}`,
+        done: x ? !!x.done : false,
+        completedDate: x ? x.completedDate || '' : '',
+        targetDate: x ? x.targetDate || '' : '',
+        starred: x ? !!x.starred : false
+      });
+    }
+    return { id: uid('sub'), name: name.trim(), colorIndex, lectures };
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ subjects: state.subjects, savedAt: Date.now() })); }
+    catch (e) {
+      console.warn('save failed', e);
+      if (!saveWarned && !cloud.user) { saveWarned = true; toast('Browser storage unavailable — changes will not be saved'); }
+    }
+    schedulePush();
+  }
+
+  function computeStats() {
+    let total = 0, done = 0;
+    state.subjects.forEach(s => { total += s.lectures.length; done += s.lectures.filter(l => l.done).length; });
+    const progress = total ? Math.round((done / total) * 100) : 0;
+    return { subjectCount: state.subjects.length, total, done, progress };
+  }
+
+  function computeStreak() {
+    const dates = new Set();
+    state.subjects.forEach(s => s.lectures.forEach(l => { if (l.done && l.completedDate) dates.add(l.completedDate); }));
+    if (!dates.size) return 0;
+    const d = new Date();
+    if (!dates.has(fmtLocal(d))) {
+      d.setDate(d.getDate() - 1);
+      if (!dates.has(fmtLocal(d))) return 0;
+    }
+    let streak = 0;
+    while (dates.has(fmtLocal(d))) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
+  }
+
+  function updateStats() {
+    const s = computeStats();
+    const streak = computeStreak();
+    document.getElementById('statSubjects').textContent = s.subjectCount;
+    document.getElementById('statLectures').textContent = s.total;
+    document.getElementById('statDone').textContent = s.done;
+    document.getElementById('statProgress').innerHTML = s.progress + '<small>%</small>';
+    document.getElementById('statStreak').innerHTML = streak + '<small>d</small>';
+  }
+
+  function isOverdue(l) { return !l.done && l.targetDate && l.targetDate < todayISO(); }
+  function isDueToday(l) { return !l.done && l.targetDate === todayISO(); }
+
+  function lectureMatches(l) {
+    const f = state.filter;
+    if (f === 'active' && l.done) return false;
+    if (f === 'done' && !l.done) return false;
+    if (f === 'overdue' && !isOverdue(l)) return false;
+    if (f === 'starred' && !l.starred) return false;
+    if (state.search) return (l.title || '').toLowerCase().includes(state.search.toLowerCase());
+    return true;
+  }
+
+  function subjectMatches(s) {
+    if (!state.search && state.filter === 'all') return true;
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      if (s.name.toLowerCase().includes(q)) {
+        if (state.filter === 'all') return true;
+        return s.lectures.some(lectureMatches);
+      }
+      return s.lectures.some(lectureMatches);
+    }
+    return s.lectures.some(lectureMatches);
+  }
+
+  function visibleLectures(s) {
+    if (!state.search) {
+      if (state.filter === 'all') return s.lectures;
+      return s.lectures.filter(lectureMatches);
+    }
+    const q = state.search.toLowerCase();
+    const hit = s.name.toLowerCase().includes(q);
+    if (hit && state.filter === 'all') return s.lectures;
+    return s.lectures.filter(lectureMatches);
+  }
+
+  function isSearchActive() { return state.search.length > 0 || state.filter !== 'all'; }
+  function isExpanded(id) { return isSearchActive() ? true : state.expanded[id] === true; }
+
+  function earliestDue(s) {
+    let min = null;
+    s.lectures.forEach(l => { if (!l.done && l.targetDate && (!min || l.targetDate < min)) min = l.targetDate; });
+    return min;
+  }
+
+  function sortSubjects(arr) {
+    const out = [...arr];
+    if (state.sort === 'name') out.sort((a, b) => a.name.localeCompare(b.name));
+    else if (state.sort === 'progress') out.sort((a, b) => {
+      const pa = a.lectures.length ? a.lectures.filter(l => l.done).length / a.lectures.length : 1;
+      const pb = b.lectures.length ? b.lectures.filter(l => l.done).length / b.lectures.length : 1;
+      return pa - pb;
+    });
+    else if (state.sort === 'due') out.sort((a, b) => {
+      const da = earliestDue(a), db = earliestDue(b);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.localeCompare(db);
+    });
+    return out;
+  }
+
+  function attentionCount(s) {
+    let n = 0;
+    s.lectures.forEach(l => { if (!l.done && l.targetDate && l.targetDate <= todayISO()) n++; });
+    return n;
+  }
+
+  const container = document.getElementById('subjectsContainer');
+
+  function render() {
+    updateStats();
+    const visible = sortSubjects(state.subjects.filter(subjectMatches));
+
+    if (!state.subjects.length) {
+      container.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          </div>
+          <h2>No subjects yet</h2>
+          <p>Create your first subject to start tracking lectures.</p>
+          <button class="btn btn-primary" onclick="document.getElementById('newSubjectBtn').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+            Create Subject
+          </button>
+        </div>`;
+      updateToggleAllBtn();
+      return;
+    }
+
+    if (!visible.length) {
+      container.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <h2>No results</h2>
+          <p>No subjects or lectures match your filter${state.search ? ' and search' : ''}.</p>
+          <button class="btn btn-ghost" onclick="document.getElementById('searchInput').value='';document.getElementById('searchInput').dispatchEvent(new Event('input'))">Clear search</button>
+        </div>`;
+      updateToggleAllBtn();
+      return;
+    }
+
+    container.innerHTML = visible.map(renderSubject).join('');
+    firstPaint = false;
+    updateToggleAllBtn();
+  }
+
+  function renderSubject(s) {
+    const lectures = visibleLectures(s);
+    if (!lectures.length && s.lectures.length) return '';
+
+    const total = s.lectures.length;
+    const done = s.lectures.filter(l => l.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const complete = total > 0 && done === total;
+    const [c1, c2] = SUBJECT_COLORS[s.colorIndex % SUBJECT_COLORS.length];
+    const initial = s.name.trim().charAt(0).toUpperCase() || '?';
+    const expanded = isExpanded(s.id);
+    const attn = attentionCount(s);
+
+    return `
+      <div class="subject-card ${expanded ? '' : 'collapsed'} ${complete ? 'complete' : ''} ${firstPaint ? 'enter' : ''}" data-subject-id="${s.id}">
+        <div class="subject-header" data-action="toggle-expand" data-subject-id="${s.id}" tabindex="0" role="button" aria-expanded="${expanded}" title=""${expanded ? 'Click to collapse' : 'Click to expand'}">
+          <div class="subject-top">
+            <div class="subject-chevron">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+            <div class="subject-avatar" style="background: linear-gradient(135deg, ${c1}, ${c2});">${esc(initial)}</div>
+            <div class="subject-info">
+              <div class="subject-name" title="${esc(s.name)}">${esc(s.name)}</div>
+              <div class="subject-meta">
+                <span>${done} of ${total} completed${complete ? ' · 🎉' : ''}</span>
+                ${attn ? `<span class="attention-badge">⚠ ${attn} due</span>` : ''}
+              </div>
+            </div>
+            <div class="subject-actions">
+              <button type="button" class="mini-btn" data-action="rename-subject" data-subject-id="${s.id}" title="Rename subject">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+              <button type="button" class="mini-btn danger" data-action="delete-subject" data-subject-id="${s.id}" title="Delete subject">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill ${complete ? 'complete' : ''}" style="width:${pct}%"></div>
+          </div>
+          <div class="progress-labels">
+            <span>${pct}% complete</span>
+            <span>${total - done} remaining</span>
+          </div>
+        </div>
+        <div class="subject-body ${expanded ? '' : 'collapsed'}">
+          <div class="subject-body-inner">
+            <div class="lecture-list">${lectures.map(l => renderLecture(s, l)).join('')}</div>
+            <div class="add-lecture-row">
+              <button type="button" class="add-lecture-btn" data-action="add-lecture" data-subject-id="${s.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Add lecture
+              </button>
+              <button type="button" class="add-lecture-btn" data-action="mark-all-done" data-subject-id="${s.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Mark all done
+              </button>
+              <button type="button" class="add-lecture-btn danger" data-action="reset-subject" data-subject-id="${s.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderLecture(s, l) {
+    const over = isOverdue(l), dueToday = isDueToday(l);
+    const cls = over ? 'overdue' : (dueToday ? 'today' : '');
+    const title = over ? 'Overdue!' : (dueToday ? 'Due today' : 'Target completion date');
+    return `
+      <div class="lecture-row ${l.done ? 'done' : ''}" data-subject-id="${s.id}" data-lecture-id="${l.id}">
+        <div class="checkbox ${l.done ? 'checked' : ''}" data-action="toggle-done" role="checkbox" aria-checked="${l.done}" tabindex="0" title="Mark as ${l.done ? 'not done' : 'done'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div class="star-btn ${l.starred ? 'active' : ''}" tabindex="0" role="button" aria-pressed="${l.starred}" data-action="toggle-star" title="${l.starred ? 'Unstar' : 'Star'}">${l.starred ? '★' : '☆'}</div>
+        <div class="lecture-title" contenteditable="true" spellcheck="false" data-action="rename-lecture">${esc(l.title)}</div>
+        <div class="dates-group" style="display:flex;gap:10px;">
+          <div class="date-field">
+            <span class="date-label">Completed</span>
+            <input type="date" class="date-input" data-action="completed-date" value="${l.completedDate}" ${l.done ? '' : 'disabled'}>
+          </div>
+          <div class="date-field">
+            <span class="date-label">Target</span>
+            <input type="date" class="date-input ${cls}" data-action="target-date" value="${l.targetDate}" title="${title}">
+          </div>
+        </div>
+        <button type="button" class="lecture-del" data-action="delete-lecture" title="Delete lecture">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+  }
+
+  const findSubject = id => state.subjects.find(s => s.id === id);
+  const findLecture = (s, id) => s && s.lectures.find(l => l.id === id);
+
+  function toast(msg, undo) {
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    const txt = document.createElement('span');
+    txt.textContent = msg;
+    el.appendChild(txt);
+    if (undo) {
+      const b = document.createElement('button');
+      b.textContent = 'Undo';
+      b.addEventListener('click', () => { undo(); el.remove(); });
+      el.appendChild(b);
+      const bar = document.createElement('div');
+      bar.className = 'undo-bar';
+      bar.style.transition = 'width 5s linear';
+      el.appendChild(bar);
+      requestAnimationFrame(() => { bar.style.width = '0%'; });
+    }
+    wrap.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0'; el.style.transform = 'translateY(12px)';
+      el.style.transition = 'all 0.3s';
+      setTimeout(() => el.remove(), 320);
+    }, undo ? 5000 : 2600);
+  }
+
+  function fireConfetti() {
+    const c = document.createElement('canvas');
+    c.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999';
+    c.width = innerWidth; c.height = innerHeight;
+    document.body.appendChild(c);
+    const ctx = c.getContext('2d');
+    const colors = ['#4f46e5','#7c3aed','#10b981','#f59e0b','#ef4444','#ec4899','#0ea5e9'];
+    const parts = [];
+    for (let i = 0; i < 160; i++) {
+      parts.push({
+        x: Math.random() * c.width, y: -20 - Math.random() * 200,
+        vx: (Math.random() - 0.5) * 6, vy: 2 + Math.random() * 5,
+        s: 6 + Math.random() * 6, color: colors[i % colors.length],
+        rot: Math.random() * Math.PI * 2, rv: (Math.random() - 0.5) * 0.3,
+        shape: Math.random() < 0.5 ? 'r' : 'c'
+      });
+    }
+    let frame = 0;
+    (function anim() {
+      ctx.clearRect(0, 0, c.width, c.height);
+      let alive = false;
+      for (const p of parts) {
+        p.vy += 0.15; p.x += p.vx; p.y += p.vy; p.rot += p.rv;
+        if (p.y < c.height + 20) {
+          alive = true;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          if (p.shape === 'r') ctx.fillRect(-p.s/2, -p.s/2, p.s, p.s * 0.6);
+          else { ctx.beginPath(); ctx.arc(0, 0, p.s/2, 0, Math.PI*2); ctx.fill(); }
+          ctx.restore();
+        }
+      }
+      frame++;
+      if (alive && frame < 320) requestAnimationFrame(anim); else c.remove();
+    })();
+  }
+
+  function toggleExpand(id) {
+    if (isSearchActive()) { toast('Clear search and filters to collapse'); return; }
+    state.expanded[id] = !state.expanded[id];
+    const card = container.querySelector(`.subject-card[data-subject-id="${id}"]`);
+    if (!card) { render(); return; }
+    const open = state.expanded[id] === true;
+    card.classList.toggle('collapsed', !open);
+    card.querySelector('.subject-body').classList.toggle('collapsed', !open);
+    const h = card.querySelector('.subject-header');
+    h.title = open ? 'Click to collapse' : 'Click to expand';
+    h.setAttribute('aria-expanded', String(open));
+    updateToggleAllBtn();
+  }
+  function expandAll() { state.subjects.forEach(s => state.expanded[s.id] = true); render(); }
+  function collapseAll() { state.expanded = {}; render(); }
+  function toggleAll() {
+    if (isSearchActive() || !state.subjects.length) return;
+    const allExpanded = state.subjects.every(s => state.expanded[s.id] === true);
+    if (allExpanded) collapseAll(); else expandAll();
+  }
+  function updateToggleAllBtn() {
+    const btn = document.getElementById('toggleAllBtn');
+    const txt = document.getElementById('toggleAllText');
+    if (isSearchActive() || !state.subjects.length) { btn.disabled = true; return; }
+    btn.disabled = false;
+    const allExpanded = state.subjects.every(s => state.expanded[s.id] === true);
+    txt.textContent = allExpanded ? 'Collapse all' : 'Expand all';
+  }
+
+  function toggleDone(sid, lid) {
+    const s = findSubject(sid), l = findLecture(s, lid);
+    if (!l) return;
+    const wasComplete = s.lectures.length > 0 && s.lectures.every(x => x.done);
+    l.done = !l.done;
+    if (l.done && !l.completedDate) l.completedDate = todayISO();
+    if (!l.done) l.completedDate = '';
+    save(); render(); refocus(lid, '.checkbox');
+    const isComplete = s.lectures.length > 0 && s.lectures.every(x => x.done);
+    if (!wasComplete && isComplete) { fireConfetti(); toast(`🎉 "${s.name}" complete!`); }
+  }
+
+  function refocus(lid, sel) {
+    const el = container.querySelector(`.lecture-row[data-lecture-id="${lid}"] ${sel}`);
+    if (el) el.focus({ preventScroll: true });
+  }
+
+  function toggleStar(sid, lid) {
+    const s = findSubject(sid), l = findLecture(s, lid);
+    if (!l) return;
+    l.starred = !l.starred;
+    save(); render(); refocus(lid, '.star-btn');
+  }
+
+  function setCompletedDate(sid, lid, v) {
+    const s = findSubject(sid), l = findLecture(s, lid);
+    if (!l || !l.done) return;
+    l.completedDate = v; save(); updateStats();
+  }
+  function setTargetDate(sid, lid, v) {
+    const s = findSubject(sid), l = findLecture(s, lid);
+    if (!l) return;
+    l.targetDate = v; save();
+    const row = container.querySelector(`.lecture-row[data-lecture-id="${lid}"]`);
+    if (row) {
+      const inp = row.querySelector('[data-action="target-date"]');
+      if (inp) {
+        inp.classList.toggle('overdue', isOverdue(l));
+        inp.classList.toggle('today', isDueToday(l));
+      }
+    }
+  }
+  function renameLecture(sid, lid, v) {
+    const s = findSubject(sid), l = findLecture(s, lid);
+    if (!l) return;
+    const nt = (v || '').trim() || 'Untitled Lecture';
+    if (nt === l.title) return;
+    l.title = nt;
+    save();
+  }
+
+  function deleteLecture(sid, lid) {
+    const s = findSubject(sid);
+    if (!s) return;
+    const i = s.lectures.findIndex(l => l.id === lid);
+    if (i === -1) return;
+    const removed = s.lectures.splice(i, 1)[0];
+    save(); render();
+    toast(`Deleted "${removed.title}"`, () => { s.lectures.splice(i, 0, removed); save(); render(); });
+  }
+
+  function addLecture(sid) {
+    const s = findSubject(sid);
+    if (!s) return;
+    state.expanded[sid] = true;
+    const nl = { id: uid('lec'), title: `Lecture ${s.lectures.length + 1}`, done: false, completedDate: '', targetDate: '', starred: false };
+    s.lectures.push(nl); save(); render();
+    requestAnimationFrame(() => {
+      const t = container.querySelector(`.lecture-row[data-lecture-id="${nl.id}"] .lecture-title`);
+      if (t) { t.focus(); const r = document.createRange(); r.selectNodeContents(t); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+    });
+  }
+
+  function markAllDone(sid) {
+    const s = findSubject(sid);
+    if (!s || !s.lectures.length) return;
+    const anyUndone = s.lectures.some(l => !l.done);
+    if (!anyUndone) { toast('All already done'); return; }
+    const before = s.lectures.map(l => ({ id: l.id, done: l.done, completedDate: l.completedDate }));
+    s.lectures.forEach(l => { if (!l.done) { l.done = true; if (!l.completedDate) l.completedDate = todayISO(); } });
+    save(); render();
+    fireConfetti();
+    toast(`Marked all done in "${s.name}"`, () => {
+      s.lectures.forEach(l => {
+        const b = before.find(x => x.id === l.id);
+        if (b) { l.done = b.done; l.completedDate = b.completedDate; }
+      });
+      save(); render();
+    });
+  }
+
+  function resetSubject(sid) {
+    const s = findSubject(sid);
+    if (!s) return;
+    const before = s.lectures.map(l => ({ id: l.id, done: l.done, completedDate: l.completedDate }));
+    s.lectures.forEach(l => { l.done = false; l.completedDate = ''; });
+    save(); render();
+    toast(`Reset "${s.name}"`, () => {
+      s.lectures.forEach(l => {
+        const b = before.find(x => x.id === l.id);
+        if (b) { l.done = b.done; l.completedDate = b.completedDate; }
+      });
+      save(); render();
+    });
+  }
+
+  function deleteSubject(sid) {
+    const i = state.subjects.findIndex(s => s.id === sid);
+    if (i === -1) return;
+    const removed = state.subjects.splice(i, 1)[0];
+    const wasExp = state.expanded[sid];
+    delete state.expanded[sid];
+    save(); render();
+    toast(`Deleted "${removed.name}"`, () => {
+      state.subjects.splice(i, 0, removed);
+      if (wasExp) state.expanded[sid] = true;
+      save(); render();
+    });
+  }
+
+  function renameSubject(sid) {
+    const s = findSubject(sid);
+    if (!s) return;
+    openSubjectModal({ mode: 'rename', subjectId: sid, title: 'Rename Subject', subtitle: 'Update the name of your subject.', nameValue: s.name, showCount: false });
+  }
+
+  /* ============================================================
+     CRITICAL FIX — action dispatcher
+     Buttons (delete/rename/add/bulk) are handled FIRST with
+     highest priority, before the header toggle can interfere.
+  ============================================================ */
+  function handleAction(action, sid, lid) {
+    switch (action) {
+      case 'delete-subject': deleteSubject(sid); break;
+      case 'rename-subject': renameSubject(sid); break;
+      case 'delete-lecture': deleteLecture(sid, lid); break;
+      case 'add-lecture': addLecture(sid); break;
+      case 'mark-all-done': markAllDone(sid); break;
+      case 'reset-subject': resetSubject(sid); break;
+      case 'toggle-done': toggleDone(sid, lid); break;
+      case 'toggle-star': toggleStar(sid, lid); break;
+    }
+  }
+
+  container.addEventListener('click', e => {
+    // 1) Buttons get absolute priority — SVGs have pointer-events:none so target IS the button
+    const btn = e.target.closest('button[data-action]');
+    if (btn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      const row = btn.closest('.lecture-row');
+      const sid = (row && row.dataset.subjectId) || btn.dataset.subjectId;
+      const lid = row ? row.dataset.lectureId : null;
+      handleAction(action, sid, lid);
+      return;
+    }
+    // 2) Non-button action elements (checkbox, star, header, etc.)
+    const a = e.target.closest('[data-action]');
+    if (!a) return;
+    const action = a.dataset.action;
+    const row = a.closest('.lecture-row');
+    const sid = (row && row.dataset.subjectId) || a.dataset.subjectId;
+    const lid = row ? row.dataset.lectureId : null;
+    if (action === 'toggle-expand') toggleExpand(sid);
+    else if (action === 'toggle-done') toggleDone(sid, lid);
+    else if (action === 'toggle-star') toggleStar(sid, lid);
+  });
+
+  container.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const cb = e.target.closest('.checkbox');
+      if (cb) { e.preventDefault(); cb.click(); return; }
+      const st = e.target.closest('.star-btn');
+      if (st) { e.preventDefault(); st.click(); return; }
+    }
+    if (e.key === 'Escape') {
+      const t = e.target.closest('.lecture-title');
+      if (t) t.blur();
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      const h = e.target.closest('.subject-header');
+      if (h && e.target === h) { e.preventDefault(); toggleExpand(h.dataset.subjectId); }
+    }
+  });
+
+  container.addEventListener('focusout', e => {
+    const t = e.target.closest('.lecture-title');
+    if (!t) return;
+    const row = t.closest('.lecture-row');
+    if (!row) return;
+    renameLecture(row.dataset.subjectId, row.dataset.lectureId, t.textContent);
+    if (!t.textContent.trim()) t.textContent = 'Untitled Lecture';
+  });
+
+  container.addEventListener('keydown', e => {
+    const t = e.target.closest('.lecture-title');
+    if (t && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); t.blur(); }
+  });
+
+  container.addEventListener('change', e => {
+    const inp = e.target, action = inp.dataset.action;
+    if (!action) return;
+    const row = inp.closest('.lecture-row');
+    if (!row) return;
+    if (action === 'completed-date') setCompletedDate(row.dataset.subjectId, row.dataset.lectureId, inp.value);
+    else if (action === 'target-date') setTargetDate(row.dataset.subjectId, row.dataset.lectureId, inp.value);
+  });
+
+  container.addEventListener('input', e => {
+    const inp = e.target;
+    if (inp.dataset.action === 'target-date') {
+      const row = inp.closest('.lecture-row');
+      if (row) {
+        const s = findSubject(row.dataset.subjectId);
+        const l = findLecture(s, row.dataset.lectureId);
+        if (l) { l.targetDate = inp.value; save(); }
+      }
+    }
+  });
+
+  // ---------- subject modal ----------
+  const overlay = document.getElementById('modalOverlay');
+  const mTitle = document.getElementById('modalTitle');
+  const mSub = document.getElementById('modalSubtitle');
+  const mName = document.getElementById('modalSubjectName');
+  const mCount = document.getElementById('modalLectureCount');
+  const mConfirm = document.getElementById('modalConfirm');
+  const mCancel = document.getElementById('modalCancel');
+  const countField = document.getElementById('countField');
+  let mMode = 'new', mSid = null;
+
+  function openSubjectModal(o) {
+    mMode = o.mode; mSid = o.subjectId || null;
+    mTitle.textContent = o.title; mSub.textContent = o.subtitle;
+    mName.value = o.nameValue || ''; mCount.value = o.countValue || 8;
+    countField.style.display = o.showCount === false ? 'none' : '';
+    overlay.classList.add('open');
+    setTimeout(() => mName.focus(), 50);
+  }
+  function closeSubjectModal() { overlay.classList.remove('open'); mMode = 'new'; mSid = null; }
+
+  document.getElementById('newSubjectBtn').addEventListener('click', () => {
+    openSubjectModal({ mode: 'new', title: 'New Subject', subtitle: 'Add a subject and choose how many lectures it has.', nameValue: '', countValue: 8, showCount: true });
+  });
+  mCancel.addEventListener('click', closeSubjectModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeSubjectModal(); });
+  mConfirm.addEventListener('click', () => {
+    const name = mName.value.trim();
+    if (!name) { mName.focus(); mName.style.borderColor = 'var(--danger)'; setTimeout(() => mName.style.borderColor = '', 1200); return; }
+    if (mMode === 'new') {
+      let c = parseInt(mCount.value, 10);
+      if (isNaN(c) || c < 1) c = 1;
+      if (c > 200) c = 200;
+      const ns = makeSubject(name, c);
+      state.subjects.push(ns);
+      state.expanded[ns.id] = true;
+      save(); render(); closeSubjectModal();
+      toast(`Created "${name}" with ${c} lecture${c !== 1 ? 's' : ''}`);
+    } else if (mMode === 'rename' && mSid) {
+      const s = findSubject(mSid);
+      if (s) { s.name = name; save(); render(); toast('Subject renamed'); }
+      closeSubjectModal();
+    }
+  });
+  mName.addEventListener('keydown', e => { if (e.key === 'Enter') mConfirm.click(); });
+  mCount.addEventListener('keydown', e => { if (e.key === 'Enter') mConfirm.click(); });
+
+  // ---------- search / filter / sort / toggle ----------
+  const searchInput = document.getElementById('searchInput');
+  let st;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(st);
+    st = setTimeout(() => { state.search = searchInput.value.trim(); render(); }, 120);
+  });
+
+  document.getElementById('filterChips').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.filter = chip.dataset.filter;
+    render();
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    state.sort = e.target.value;
+    render();
+  });
+
+  document.getElementById('toggleAllBtn').addEventListener('click', toggleAll);
+
+  // ---------- export / import ----------
+  function exportData() {
+    const data = { version: 3, exportedAt: new Date().toISOString(), subjects: state.subjects };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lecture-tracker-${todayISO()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Exported to file');
+  }
+
+  const importFile = document.getElementById('importFile');
+  importFile.addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        if (!d.subjects || !Array.isArray(d.subjects)) throw new Error('Invalid file format');
+        const prevSubjects = state.subjects, prevExpanded = state.expanded;
+        state.subjects = d.subjects.map(normalizeSubject);
+        state.expanded = {};
+        save(); render();
+        toast(`Imported ${d.subjects.length} subject(s)`, () => { state.subjects = prevSubjects; state.expanded = prevExpanded; save(); render(); });
+      } catch (err) { toast('Import failed: ' + err.message); }
+    };
+    r.readAsText(f);
+    importFile.value = '';
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+  document.getElementById('importBtn').addEventListener('click', () => importFile.click());
+
+  // ---------- shortcuts ----------
+  const shortcutsOverlay = document.getElementById('shortcutsOverlay');
+  function openShortcuts() { shortcutsOverlay.classList.add('open'); }
+  function closeShortcuts() { shortcutsOverlay.classList.remove('open'); }
+  document.getElementById('shortcutsClose').addEventListener('click', closeShortcuts);
+  document.getElementById('helpBtn').addEventListener('click', openShortcuts);
+  shortcutsOverlay.addEventListener('click', e => { if (e.target === shortcutsOverlay) closeShortcuts(); });
+
+  // ---------- theme ----------
+  const themeBtn = document.getElementById('themeBtn');
+  function getSavedTheme() { try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; } }
+  function saveTheme(v) { try { localStorage.setItem(THEME_KEY, v); } catch (e) { /* storage unavailable */ } }
+  function applyTheme(dark) {
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    themeBtn.classList.toggle('active', dark);
+  }
+  (function initTheme() {
+    const saved = getSavedTheme();
+    const prefersDark = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(saved ? saved === 'dark' : prefersDark);
+  })();
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+    applyTheme(dark);
+    saveTheme(dark ? 'dark' : 'light');
+  });
+
+  // ---------- global shortcuts ----------
+  function isTypingTarget(el) {
+    return el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+  }
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e') {
+      if (!document.querySelector('.overlay.open')) { e.preventDefault(); toggleAll(); }
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (shortcutsOverlay.classList.contains('open')) { closeShortcuts(); return; }
+      if (authOverlay.classList.contains('open')) { closeAuth(); return; }
+      if (overlay.classList.contains('open')) { closeSubjectModal(); return; }
+      if (document.activeElement === searchInput) {
+        if (searchInput.value) { searchInput.value = ''; state.search = ''; render(); }
+        searchInput.blur(); return;
+      }
+    }
+    if (isTypingTarget(document.activeElement)) return;
+    if (document.querySelector('.overlay.open')) return;
+
+    if (e.key === '/') { e.preventDefault(); searchInput.focus(); }
+    else if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      document.getElementById('newSubjectBtn').click();
+    }
+    else if (e.key === '?') { e.preventDefault(); openShortcuts(); }
+  });
+
+  // ---------- cloud sync (Firebase Auth + Firestore) ----------
+  // Data model: one Firestore document per user at  users/{uid}  =  { version, updatedAt, subjects: [...] }
+  // localStorage stays as an instant/offline copy. Conflict rule: last write wins.
+  const cloud = {
+    enabled: false, user: null, fb: null, auth: null, db: null, ref: null,
+    unsub: null, timer: null, deferred: null, interactive: false, errToast: false
+  };
+  const syncBtn = document.getElementById('syncBtn');
+  const syncLabel = document.getElementById('syncLabel');
+  const authOverlay = document.getElementById('authOverlay');
+  const authEmail = document.getElementById('authEmail');
+  const authPassword = document.getElementById('authPassword');
+  const authError = document.getElementById('authError');
+
+  function cloudConfigured() {
+    return !!FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('PASTE');
+  }
+  function setSync(status, label) {
+    syncBtn.classList.remove('ok', 'syncing', 'err');
+    if (status) syncBtn.classList.add(status);
+    syncLabel.textContent = label;
+  }
+
+  async function initCloud() {
+    if (!cloudConfigured()) { setSync('', 'Local only'); return; }
+    setSync('syncing', 'Connecting…');
+    try {
+      const base = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/`;
+      const [appM, authM, fsM] = await Promise.all([
+        import(base + 'firebase-app.js'),
+        import(base + 'firebase-auth.js'),
+        import(base + 'firebase-firestore.js')
+      ]);
+      const app = appM.initializeApp(FIREBASE_CONFIG);
+      cloud.fb = Object.assign({}, authM, fsM);
+      cloud.auth = authM.getAuth(app);
+      try {
+        cloud.db = fsM.initializeFirestore(app, {
+          localCache: fsM.persistentLocalCache({ tabManager: fsM.persistentMultipleTabManager() })
+        });
+      } catch (e) { cloud.db = fsM.getFirestore(app); }
+      cloud.enabled = true;
+      authM.onAuthStateChanged(cloud.auth, onAuthChanged);
+    } catch (e) {
+      console.warn('Cloud init failed', e);
+      setSync('err', 'Offline mode');
+    }
+  }
+
+  function onAuthChanged(user) {
+    stopListening();
+    cloud.user = user;
+    refreshAuthUI();
+    if (!user) { setSync('', 'Sign in to sync'); return; }
+    startListening(user);
+  }
+
+  function stopListening() {
+    if (cloud.unsub) { cloud.unsub(); cloud.unsub = null; }
+    clearTimeout(cloud.timer); cloud.timer = null;
+    cloud.deferred = null; cloud.ref = null;
+  }
+
+  function startListening(user) {
+    const { doc, onSnapshot } = cloud.fb;
+    cloud.ref = doc(cloud.db, 'users', user.uid);
+    const myRef = cloud.ref;
+    setSync('syncing', 'Syncing…');
+    let first = true;
+    cloud.unsub = onSnapshot(cloud.ref, { includeMetadataChanges: true }, snap => {
+      if (cloud.ref !== myRef) return;      // stale listener (signed out / switched account)
+      const pending = snap.metadata.hasPendingWrites;
+      // A cache-only "does not exist" must not be trusted: wait for the server before uploading anything.
+      if (!snap.exists() && snap.metadata.fromCache) { setSync('err', 'Offline'); return; }
+      if (!snap.exists()) {            // server confirms: brand-new account, upload what is on this device
+        first = false; pushNow(); cloud.interactive = false; return;
+      }
+      setSync(pending ? 'syncing' : (snap.metadata.fromCache ? 'err' : 'ok'),
+              pending ? 'Saving…' : (snap.metadata.fromCache ? 'Offline' : 'Synced'));
+      if (pending) return;             // echo of our own local write
+      const data = snap.data() || {};
+      applyRemote(data.subjects, first);
+      first = false;
+    }, err => {
+      if (cloud.ref !== myRef) return;
+      console.warn('snapshot error', err);
+      setSync('err', 'Sync error');
+      reportSyncError(err);
+    });
+  }
+
+  function isEditing() {
+    const a = document.activeElement;
+    return !!a && (a.isContentEditable || (a.tagName === 'INPUT' && container.contains(a)));
+  }
+
+  function applyRemote(raw, first) {
+    if (!Array.isArray(raw)) return;
+    const incoming = raw.map(normalizeSubject);
+    if (JSON.stringify(incoming) === JSON.stringify(state.subjects)) return;
+    if (cloud.timer) return;                                  // we have unsent local edits: they win
+    if (isEditing()) { cloud.deferred = raw; return; }        // do not wipe a field the user is typing in
+    const prev = state.subjects;
+    state.subjects = incoming;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ subjects: incoming, savedAt: Date.now() })); } catch (e) {}
+    render();
+    if (first && cloud.interactive && prev.length) {
+      cloud.interactive = false;
+      toast('Loaded your cloud data', () => { state.subjects = prev; save(); render(); });
+    }
+  }
+  document.addEventListener('focusout', () => setTimeout(() => {
+    if (!cloud.deferred) return;
+    if (cloud.timer) { cloud.deferred = null; return; }
+    if (isEditing()) return;
+    const d = cloud.deferred; cloud.deferred = null; applyRemote(d, false);
+  }, 60));
+
+  function schedulePush() {
+    if (!cloud.user || !cloud.ref) return;
+    clearTimeout(cloud.timer);
+    setSync('syncing', 'Saving…');
+    cloud.timer = setTimeout(pushNow, 700);
+  }
+
+  async function pushNow() {
+    clearTimeout(cloud.timer); cloud.timer = null;
+    if (!cloud.user || !cloud.ref) return;
+    const { setDoc, serverTimestamp } = cloud.fb;
+    try {
+      await setDoc(cloud.ref, {
+        version: 3,
+        updatedAt: serverTimestamp(),
+        subjects: JSON.parse(JSON.stringify(state.subjects))
+      });
+    } catch (e) {
+      console.warn('push failed', e);
+      setSync('err', 'Sync failed');
+      reportSyncError(e);
+    }
+  }
+
+  function reportSyncError(e) {
+    if (cloud.errToast) return;
+    cloud.errToast = true;
+    const code = (e && e.code) || '';
+    toast(code === 'permission-denied'
+      ? 'Cloud blocked the save — check your Firestore rules'
+      : 'Cloud sync problem: ' + (code || (e && e.message) || 'unknown'));
+  }
+
+  window.addEventListener('offline', () => { if (cloud.user) setSync('err', 'Offline'); });
+  window.addEventListener('online', () => { if (cloud.user) setSync('syncing', 'Syncing…'); });
+
+  // ----- account modal -----
+  function refreshAuthUI() {
+    const inn = !!cloud.user;
+    document.getElementById('authFormBody').classList.toggle('hidden', inn);
+    document.getElementById('authFormFoot').classList.toggle('hidden', inn);
+    document.getElementById('authAccountBody').classList.toggle('hidden', !inn);
+    document.getElementById('authAccountFoot').classList.toggle('hidden', !inn);
+    document.getElementById('authTitle').textContent = inn ? 'Your account' : 'Sign in to sync';
+    document.getElementById('authSub').textContent = inn
+      ? 'You are signed in and your data is saved online.'
+      : 'Save your data online and use it on any device.';
+    if (inn) document.getElementById('authAccountEmail').textContent = cloud.user.email || cloud.user.displayName || cloud.user.uid;
+  }
+  function openAuth() {
+    if (!cloudConfigured()) { toast('Cloud sync is not set up yet — paste your Firebase config into the file'); return; }
+    if (!cloud.enabled) { toast('Cloud is still loading, or you are offline. Try again in a moment.'); return; }
+    refreshAuthUI(); authError.textContent = '';
+    authOverlay.classList.add('open');
+    if (!cloud.user) setTimeout(() => authEmail.focus(), 50);
+  }
+  function closeAuth() { authOverlay.classList.remove('open'); authPassword.value = ''; authError.textContent = ''; }
+
+  function friendlyAuthError(e) {
+    const m = {
+      'auth/invalid-email': 'That email address looks invalid.',
+      'auth/missing-password': 'Enter your password.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
+      'auth/email-already-in-use': 'An account with this email already exists — use Sign in.',
+      'auth/invalid-credential': 'Wrong email or password.',
+      'auth/wrong-password': 'Wrong email or password.',
+      'auth/user-not-found': 'No account with this email — use Create account.',
+      'auth/too-many-requests': 'Too many attempts. Wait a few minutes and try again.',
+      'auth/network-request-failed': 'No internet connection.',
+      'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
+      'auth/popup-blocked': 'Popup was blocked — allow popups for this site (Brave: tap the shield / lion icon).',
+      'auth/unauthorized-domain': 'This website address is not authorised in Firebase (Authentication → Settings → Authorized domains).',
+      'auth/operation-not-allowed': 'This sign-in method is not enabled in Firebase → Authentication → Sign-in method.'
+    };
+    return m[e && e.code] || ('Sign-in failed: ' + ((e && (e.code || e.message)) || 'unknown error'));
+  }
+  function authBusy(b) {
+    ['authSignIn', 'authSignUp', 'authGoogle', 'authForgot'].forEach(id => { document.getElementById(id).disabled = b; });
+  }
+
+  async function runAuth(fn, okMsg) {
+    authError.textContent = ''; authBusy(true); cloud.interactive = true;
+    try { await fn(); closeAuth(); if (okMsg) toast(okMsg); }
+    catch (e) { cloud.interactive = false; authError.textContent = friendlyAuthError(e); }
+    finally { authBusy(false); }
+  }
+  function creds() { return [authEmail.value.trim(), authPassword.value]; }
+
+  syncBtn.addEventListener('click', openAuth);
+  authOverlay.addEventListener('click', e => { if (e.target === authOverlay) closeAuth(); });
+  document.getElementById('authCancel').addEventListener('click', closeAuth);
+  document.getElementById('authClose2').addEventListener('click', closeAuth);
+  document.getElementById('authSignIn').addEventListener('click', () => {
+    const [em, pw] = creds();
+    if (!em || !pw) { authError.textContent = 'Enter your email and password.'; return; }
+    runAuth(() => cloud.fb.signInWithEmailAndPassword(cloud.auth, em, pw), 'Signed in');
+  });
+  document.getElementById('authSignUp').addEventListener('click', () => {
+    const [em, pw] = creds();
+    if (!em || !pw) { authError.textContent = 'Enter an email and a password (6+ characters).'; return; }
+    runAuth(() => cloud.fb.createUserWithEmailAndPassword(cloud.auth, em, pw), 'Account created');
+  });
+  document.getElementById('authGoogle').addEventListener('click', () => {
+    runAuth(() => cloud.fb.signInWithPopup(cloud.auth, new cloud.fb.GoogleAuthProvider()), 'Signed in');
+  });
+  document.getElementById('authForgot').addEventListener('click', async () => {
+    const [em] = creds();
+    if (!em) { authError.textContent = 'Type your email above first, then tap "Forgot password?".'; return; }
+    authBusy(true);
+    try { await cloud.fb.sendPasswordResetEmail(cloud.auth, em); authError.textContent = ''; toast('Password reset email sent'); }
+    catch (e) { authError.textContent = friendlyAuthError(e); }
+    finally { authBusy(false); }
+  });
+  authEmail.addEventListener('keydown', e => { if (e.key === 'Enter') authPassword.focus(); });
+  authPassword.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('authSignIn').click(); });
+
+  document.getElementById('authSignOut').addEventListener('click', async () => {
+    try {
+      if (cloud.timer) await Promise.race([pushNow(), new Promise(r => setTimeout(r, 3000))]);   // flush unsent edits
+      const prev = state.subjects;
+      await cloud.fb.signOut(cloud.auth);
+      // Privacy on shared devices: signing out removes the local copy (your data stays in the cloud).
+      state.subjects = []; state.expanded = {};
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      closeAuth(); render();
+      toast('Signed out — local copy cleared', () => { state.subjects = prev; save(); render(); });
+    } catch (e) { authError.textContent = friendlyAuthError(e); }
+  });
+
+  // ---------- init ----------
+  load();
+  render();
+  initCloud();
+})();
+</script>
+</body>
+</html>
