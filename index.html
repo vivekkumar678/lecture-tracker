@@ -560,6 +560,36 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
   ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ===================== guide + scheduling ===================== */
+  .guide-modal { max-width: 640px; }
+  .guide { gap: 22px; }
+  .guide h4 { font-size: 14px; font-weight: 800; margin-bottom: 10px; }
+  .guide i { font-style: normal; font-weight: 700; color: var(--text); }
+  .guide-steps { list-style: none; counter-reset: g; display: flex; flex-direction: column; gap: 14px; }
+  .guide-steps li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; counter-increment: g; font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+  .guide-steps li::before { content: counter(g); width: 28px; height: 28px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .guide-steps b { display: block; color: var(--text); font-size: 14px; margin-bottom: 1px; }
+  .guide-list { list-style: none; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; color: var(--text-muted); line-height: 1.55; }
+  .guide-list b { color: var(--text); }
+  .field select { padding: 11px 14px; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 11px; font-size: 14px; font-weight: 500; min-width: 0; width: 100%; }
+  .field select:focus { border-color: var(--primary); background: var(--surface); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .seg { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 11px; border: 1px solid var(--border); }
+  .seg button { flex: 1; padding: 8px 6px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+  .seg button.active { background: var(--primary); color: #fff; }
+  .step-chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .step-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 700; color: var(--text-muted); }
+  .step-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .step-chips input { width: 76px; padding: 7px 10px; border-radius: 99px; text-align: center; }
+  .sched-preview { background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; padding: 8px 12px; font-size: 13px; max-height: 190px; overflow: auto; }
+  .sched-preview div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  .sched-preview span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sched-preview .when { font-weight: 700; white-space: nowrap; }
+  .sched-preview .more { color: var(--text-muted); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .toast.fill-toast { flex-wrap: wrap; justify-content: center; }
+  .toast .fill-btn { background: var(--primary); color: #fff; padding: 5px 11px; border-radius: 8px; }
+  .step-chip:focus-visible, .seg button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -576,6 +606,9 @@
     <div class="topbar-actions">
       <button class="btn btn-ghost sync-btn" id="syncBtn" title="Cloud sync / account" aria-label="Cloud sync and account">
         <span class="sync-dot"></span><span id="syncLabel">Local only</span>
+      </button>
+      <button class="icon-btn" id="guideBtn" title="How it works" aria-label="How Lecture Tracker works">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>
       </button>
       <button class="icon-btn" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
@@ -692,6 +725,15 @@
         <label for="modalExamDate">Exam date (optional)</label>
         <input type="date" id="modalExamDate">
         <div class="field-hint">Shows a countdown and the pace you need.</div>
+      </div>
+      <div id="autoSchedField">
+        <div class="two-col">
+          <div class="field"><label for="modalFirstDate">First lecture date (optional)</label><input type="date" id="modalFirstDate"></div>
+          <div class="field"><label for="modalGap">Then every</label>
+            <select id="modalGap"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="7">7 days</option></select>
+          </div>
+        </div>
+        <div class="field-hint" style="margin-top:6px">Fills a target date for every lecture. You can change it later with Schedule dates.</div>
       </div>
       <div class="field">
         <label>Colour</label>
@@ -819,6 +861,86 @@
       </div>
     </div>
     <div class="modal-foot"><button type="button" class="btn btn-primary" id="settingsClose">Done</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="guideOverlay">
+  <div class="modal guide-modal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="modal-head">
+      <h3 id="guideTitle">Welcome to Lecture Tracker</h3>
+      <p>A study planner for your lectures. Plan them, study them, then revise them before you forget.</p>
+    </div>
+    <div class="modal-body guide">
+      <section>
+        <h4>How it works</h4>
+        <ol class="guide-steps">
+          <li><div><b>Add a subject</b>Tap <i>New Subject</i>, name it and say how many lectures it has. Add an exam date and the app tells you how many lectures a day you need. Lecture titles can be pasted in as a list later.</div></li>
+          <li><div><b>Set target dates</b>Pick a date on the first lecture, then tap <i>+1 day</i>, <i>+2 days</i> or <i>+3 days</i> and every later lecture in that subject is filled in. For more control (only Mon, Wed, Fri; two lectures a day; spread evenly until your exam) open <i>Schedule dates</i> inside a subject.</div></li>
+          <li><div><b>Study</b>Press the ▶ button on a lecture to start a focus timer. The time is saved against that lecture. Add notes, a priority or a star to anything that matters.</div></li>
+          <li><div><b>Tick it off</b>Check the box when you finish. Finished lectures count towards your progress, your daily streak and your daily goal.</div></li>
+          <li><div><b>Revise</b>Finished lectures come back after 1, 3, 7, 14 and 30 days. When you see <i>Revise now</i>, review the lecture and tap the badge.</div></li>
+        </ol>
+      </section>
+      <section>
+        <h4>Where to look</h4>
+        <ul class="guide-list">
+          <li><b>Up next</b> at the top picks the one lecture to do now, using dates, priority and exams.</li>
+          <li><b>Subjects</b> holds every subject and lecture. <b>Agenda</b> lists what is overdue, due today, due this week, ready to revise, and your exams. <b>Insights</b> shows your streak, activity map, study time and achievements.</li>
+        </ul>
+      </section>
+      <section>
+        <h4>Your data</h4>
+        <ul class="guide-list">
+          <li>Everything saves in this browser automatically. Use the sync button at the top to sign in and keep the same data on your phone and laptop.</li>
+          <li>The export and import buttons make a backup file you can restore later.</li>
+          <li>To install it like an app, open your browser menu and choose Add to Home Screen.</li>
+          <li>The two subjects you see now are samples. Delete them with the bin icon whenever you like.</li>
+        </ul>
+      </section>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-primary" id="guideClose">Start tracking</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="schedOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="schedTitle">
+    <div class="modal-head"><h3 id="schedTitle">Schedule dates</h3><p id="schedSub"></p></div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="field"><label for="schedFrom">Start at lecture</label><select id="schedFrom"></select></div>
+        <div class="field"><label for="schedStart">On date</label><input type="date" id="schedStart"></div>
+      </div>
+      <div class="field"><label>Pattern</label>
+        <div class="seg" id="schedMode">
+          <button type="button" data-mode="every">Every few days</button>
+          <button type="button" data-mode="days">Chosen weekdays</button>
+          <button type="button" data-mode="spread">Spread to a date</button>
+        </div>
+      </div>
+      <div class="field" data-for="every"><label>Days between lectures</label>
+        <div class="step-chips">
+          <button type="button" class="step-chip" data-step="1">+1</button>
+          <button type="button" class="step-chip" data-step="2">+2</button>
+          <button type="button" class="step-chip" data-step="3">+3</button>
+          <button type="button" class="step-chip" data-step="7">+7</button>
+          <input type="number" id="schedStepNum" min="1" max="60" value="1" aria-label="Custom number of days">
+        </div>
+      </div>
+      <div class="field" data-for="days"><label>Study on</label>
+        <div class="step-chips">
+          <button type="button" class="step-chip" data-d="1">Mon</button><button type="button" class="step-chip" data-d="2">Tue</button><button type="button" class="step-chip" data-d="3">Wed</button><button type="button" class="step-chip" data-d="4">Thu</button><button type="button" class="step-chip" data-d="5">Fri</button><button type="button" class="step-chip" data-d="6">Sat</button><button type="button" class="step-chip" data-d="0">Sun</button>
+        </div>
+      </div>
+      <div class="field" data-for="spread"><label for="schedEnd">Finish by</label><input type="date" id="schedEnd"><div class="field-hint">Lectures are spaced evenly from the start date to this date.</div></div>
+      <div class="field" data-for="every days"><label for="schedPer">Lectures per day</label><input type="number" id="schedPer" min="1" max="10" value="1"></div>
+      <label class="check-row"><input type="checkbox" id="schedSkip" checked> Skip lectures already done</label>
+      <label class="check-row"><input type="checkbox" id="schedKeep"> Keep dates I already set</label>
+      <div class="field"><label>Preview</label><div class="sched-preview" id="schedPreview"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" id="schedCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="schedApply">Apply dates</button>
+    </div>
   </div>
 </div>
 
@@ -1224,6 +1346,10 @@ const FIREBASE_SDK_VERSION = '10.12.2';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
                 Paste list
               </button>
+              <button type="button" class="add-lecture-btn" data-action="schedule" data-subject-id="${s.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                Schedule dates
+              </button>
               <button type="button" class="add-lecture-btn" data-action="mark-all-done" data-subject-id="${s.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 Mark all done
@@ -1517,6 +1643,7 @@ const FIREBASE_SDK_VERSION = '10.12.2';
       case 'focus-lecture': startFocus(sid, lid); break;
       case 'open-notes': openNotes(sid, lid); break;
       case 'revise': reviseLecture(sid, lid); break;
+      case 'schedule': openSchedule(sid); break;
     }
   }
 
@@ -1582,7 +1709,7 @@ const FIREBASE_SDK_VERSION = '10.12.2';
     const row = inp.closest('.lecture-row');
     if (!row) return;
     if (action === 'completed-date') setCompletedDate(row.dataset.subjectId, row.dataset.lectureId, inp.value);
-    else if (action === 'target-date') setTargetDate(row.dataset.subjectId, row.dataset.lectureId, inp.value);
+    else if (action === 'target-date') { setTargetDate(row.dataset.subjectId, row.dataset.lectureId, inp.value); offerFill(row.dataset.subjectId, row.dataset.lectureId); }
   });
 
   container.addEventListener('input', e => {
@@ -1615,6 +1742,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
     mExam.value = o.examValue || '';
     setModalColor(typeof o.colorValue === 'number' ? o.colorValue : Math.floor(Math.random() * SUBJECT_COLORS.length));
     countField.style.display = o.showCount === false ? 'none' : '';
+    autoField.style.display = o.showCount === false ? 'none' : '';
+    mFirst.value = ''; mGap.value = '1';
     overlay.classList.add('open');
     setTimeout(() => mName.focus(), 50);
   }
@@ -1634,6 +1763,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
       if (c > 200) c = 200;
       const ns = makeSubject(name, c);
       ns.examDate = cleanDate(mExam.value); ns.colorIndex = mColor;
+      const f0 = cleanDate(mFirst.value), g0 = parseInt(mGap.value, 10) || 1;
+      if (f0) ns.lectures.forEach((l, i) => { l.targetDate = addDaysISO(f0, i * g0); });
       state.subjects.push(ns);
       state.expanded[ns.id] = true;
       save(); render(); closeSubjectModal();
@@ -1745,6 +1876,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
       return;
     }
     if (e.key === 'Escape') {
+      if (guideOverlay.classList.contains('open')) { closeGuide(); return; }
+      if (schOverlay.classList.contains('open')) { closeSched(); return; }
       if (shortcutsOverlay.classList.contains('open')) { closeShortcuts(); return; }
       if (authOverlay.classList.contains('open')) { closeAuth(); return; }
       if (notesOverlay.classList.contains('open')) { closeNotes(); return; }
@@ -2724,11 +2857,155 @@ const FIREBASE_SDK_VERSION = '10.12.2';
     } catch (e) { authError.textContent = friendlyAuthError(e); }
   });
 
+  // ---------- scheduling: fill target dates ----------
+  const autoField = document.getElementById('autoSchedField'), mFirst = document.getElementById('modalFirstDate'), mGap = document.getElementById('modalGap');
+  const schOverlay = document.getElementById('schedOverlay'), schFrom = document.getElementById('schedFrom'), schStart = document.getElementById('schedStart');
+  const schEnd = document.getElementById('schedEnd'), schStepNum = document.getElementById('schedStepNum'), schPer = document.getElementById('schedPer');
+  const schSkip = document.getElementById('schedSkip'), schKeep = document.getElementById('schedKeep'), schPreview = document.getElementById('schedPreview'), schApply = document.getElementById('schedApply');
+  let sch = null;
+
+  // n lectures -> n dates. c = { start, mode: 'every' | 'days' | 'spread', step, per, days, end }
+  function buildDates(n, c) {
+    const out = [], per = Math.max(1, c.per || 1);
+    if (!n || !c.start) return out;
+    if (c.mode === 'spread') {
+      const span = Math.max(0, diffDays(c.start, c.end || c.start));
+      for (let i = 0; i < n; i++) out.push(addDaysISO(c.start, n > 1 ? Math.round(i * span / (n - 1)) : 0));
+      return out;
+    }
+    const ok = (c.days && c.days.length) ? c.days : [0, 1, 2, 3, 4, 5, 6];
+    const next = x => {
+      if (c.mode !== 'days') return addDaysISO(x, Math.max(1, c.step || 1));
+      let y = x;
+      for (let g = 0; g < 7; g++) { y = addDaysISO(y, 1); if (ok.includes(parseISO(y).getDay())) break; }
+      return y;
+    };
+    let d = c.start;
+    if (c.mode === 'days') for (let g = 0; g < 7 && !ok.includes(parseISO(d).getDay()); g++) d = addDaysISO(d, 1);
+    for (let i = 0; i < n; i++) { out.push(d); if ((i + 1) % per === 0) d = next(d); }
+    return out;
+  }
+  function schedTargets(s, cfg) {
+    const from = Math.max(0, s.lectures.findIndex(l => l.id === cfg.fromId));
+    return s.lectures.slice(from).filter(l => !(cfg.skipDone && l.done) && !(cfg.keep && l.targetDate));
+  }
+
+  function toastActions(msg, actions, ms) {
+    document.querySelectorAll('.toast.fill-toast').forEach(x => x.remove());
+    const el = document.createElement('div');
+    el.className = 'toast fill-toast';
+    const txt = document.createElement('span'); txt.textContent = msg; el.appendChild(txt);
+    actions.forEach(a => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'fill-btn'; b.textContent = a.label;
+      b.addEventListener('click', () => { el.remove(); a.fn(); });
+      el.appendChild(b);
+    });
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => el.remove(), ms || 10000);
+  }
+  function offerFill(sid, lid) {
+    const s = findSubject(sid), i = s ? s.lectures.findIndex(l => l.id === lid) : -1;
+    if (i < 0 || !s.lectures[i].targetDate || !s.lectures.slice(i + 1).some(l => !l.done)) return;
+    toastActions('Fill the next lectures:', [
+      { label: '+1 day', fn: () => quickFill(sid, lid, 1) },
+      { label: '+2 days', fn: () => quickFill(sid, lid, 2) },
+      { label: '+3 days', fn: () => quickFill(sid, lid, 3) },
+      { label: 'More…', fn: () => openSchedule(sid, lid, s.lectures[i].targetDate) }
+    ]);
+  }
+  function quickFill(sid, lid, step) {
+    const s = findSubject(sid), i = s ? s.lectures.findIndex(l => l.id === lid) : -1;
+    if (i < 0) return;
+    const base = s.lectures[i].targetDate, t = s.lectures.slice(i + 1).filter(l => !l.done), before = t.map(l => l.targetDate);
+    if (!base || !t.length) return;
+    t.forEach((l, k) => { l.targetDate = addDaysISO(base, step * (k + 1)); });
+    save(); render();
+    toast(t.length + ' lecture' + (t.length > 1 ? 's' : '') + ' set ' + step + ' day' + (step > 1 ? 's' : '') + ' apart, last on ' + niceDay(t[t.length - 1].targetDate),
+      () => { t.forEach((l, k) => { l.targetDate = before[k]; }); save(); render(); });
+  }
+
+  function openSchedule(sid, fromId, start) {
+    const s = findSubject(sid);
+    if (!s) return;
+    const from = (fromId && findLecture(s, fromId)) || s.lectures.find(l => !l.done) || s.lectures[0];
+    if (!from) { toast('Add some lectures first'); return; }
+    const st = start || from.targetDate || todayISO(), ex = s.examDate ? addDaysISO(s.examDate, -1) : '';
+    sch = { sid, fromId: from.id, start: st, mode: 'every', step: 1, per: 1, days: [1, 2, 3, 4, 5], end: (ex && ex >= st) ? ex : addDaysISO(st, 30), skipDone: true, keep: false };
+    schFrom.innerHTML = s.lectures.map(l => '<option value="' + esc(l.id) + '">' + esc(l.title) + '</option>').join('');
+    schFrom.value = from.id; schStart.value = sch.start; schEnd.value = sch.end;
+    schStepNum.value = 1; schPer.value = 1; schSkip.checked = true; schKeep.checked = false;
+    document.getElementById('schedSub').textContent = s.name;
+    paintSched();
+    schOverlay.classList.add('open');
+  }
+  function closeSched() { schOverlay.classList.remove('open'); sch = null; }
+  function syncSched() {
+    if (!sch) return;
+    sch.fromId = schFrom.value; sch.start = cleanDate(schStart.value); sch.end = cleanDate(schEnd.value);
+    sch.step = Math.min(60, Math.max(1, parseInt(schStepNum.value, 10) || 1));
+    sch.per = Math.min(10, Math.max(1, parseInt(schPer.value, 10) || 1));
+    sch.skipDone = schSkip.checked; sch.keep = schKeep.checked;
+    paintSched();
+  }
+  function paintSched() {
+    const s = sch && findSubject(sch.sid);
+    if (!s) return;
+    schOverlay.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === sch.mode));
+    schOverlay.querySelectorAll('[data-step]').forEach(b => b.classList.toggle('active', Number(b.dataset.step) === sch.step));
+    schOverlay.querySelectorAll('[data-d]').forEach(b => b.classList.toggle('active', sch.days.includes(Number(b.dataset.d))));
+    schOverlay.querySelectorAll('[data-for]').forEach(f => f.classList.toggle('hidden', !f.dataset.for.split(' ').includes(sch.mode)));
+    const t = schedTargets(s, sch), ds = buildDates(t.length, sch);
+    let msg = '';
+    if (!sch.start) msg = 'Pick a start date.';
+    else if (sch.mode === 'spread' && (!sch.end || sch.end < sch.start)) msg = 'Choose a finish date on or after the start date.';
+    else if (sch.mode === 'days' && !sch.days.length) msg = 'Pick at least one weekday.';
+    else if (!t.length) msg = 'No lectures match these options.';
+    schPreview.innerHTML = msg ? '<div class="more">' + msg + '</div>'
+      : t.slice(0, 5).map((l, i) => '<div><span>' + esc(l.title) + '</span><span class="when">' + esc(niceDay(ds[i])) + '</span></div>').join('') +
+        (t.length > 5 ? '<div class="more"><span>+ ' + (t.length - 5) + ' more</span><span class="when">last: ' + esc(niceDay(ds[ds.length - 1])) + '</span></div>' : '');
+    schApply.disabled = !!msg;
+  }
+  function applySched() {
+    const s = sch && findSubject(sch.sid);
+    if (!s) { closeSched(); return; }
+    const t = schedTargets(s, sch), ds = buildDates(t.length, sch);
+    if (!t.length || !ds.length) return;
+    const before = t.map(l => l.targetDate);
+    t.forEach((l, i) => { l.targetDate = ds[i]; });
+    state.expanded[s.id] = true;
+    save(); render(); closeSched();
+    toast('Dates set for ' + t.length + ' lecture' + (t.length > 1 ? 's' : '') + ', last on ' + niceDay(ds[ds.length - 1]),
+      () => { t.forEach((l, i) => { l.targetDate = before[i]; }); save(); render(); });
+  }
+  schOverlay.addEventListener('input', syncSched);
+  schOverlay.addEventListener('click', e => {
+    if (e.target === schOverlay) { closeSched(); return; }
+    const m = e.target.closest('[data-mode]'), c = e.target.closest('[data-step]'), d = e.target.closest('[data-d]');
+    if (m && sch) { sch.mode = m.dataset.mode; paintSched(); }
+    else if (c) { schStepNum.value = c.dataset.step; syncSched(); }
+    else if (d && sch) { const n = Number(d.dataset.d); sch.days = sch.days.includes(n) ? sch.days.filter(x => x !== n) : sch.days.concat(n); paintSched(); }
+  });
+  document.getElementById('schedCancel').addEventListener('click', closeSched);
+  schApply.addEventListener('click', applySched);
+
+  // ---------- welcome guide ----------
+  const GUIDE_KEY = 'lecture_tracker_guide_seen_v1';
+  const guideOverlay = document.getElementById('guideOverlay');
+  function openGuide() { guideOverlay.classList.add('open'); guideOverlay.querySelector('.modal').scrollTop = 0; }
+  function closeGuide() { guideOverlay.classList.remove('open'); try { localStorage.setItem(GUIDE_KEY, '1'); } catch (e) { /* ignore */ } }
+  document.getElementById('guideBtn').addEventListener('click', openGuide);
+  document.getElementById('guideClose').addEventListener('click', closeGuide);
+  guideOverlay.addEventListener('click', e => { if (e.target === guideOverlay) closeGuide(); });
+
   // ---------- init ----------
+  let firstVisit = false;
+  try { firstVisit = !localStorage.getItem(STORAGE_KEY) && !localStorage.getItem(GUIDE_KEY); } catch (e) { /* ignore */ }
   load();
   applyAppearance();
   render();
   restoreFocus();
+  if (firstVisit) openGuide();
   initCloud();
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));

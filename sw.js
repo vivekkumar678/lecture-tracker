@@ -1,6 +1,6 @@
 /* Lecture Tracker service worker — network first, falls back to the cached copy when offline.
    Bump CACHE_VERSION whenever you upload a new index.html so phones pick it up. */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE = 'lecture-tracker-' + CACHE_VERSION;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
