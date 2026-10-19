@@ -590,6 +590,16 @@
   .toast.fill-toast { flex-wrap: wrap; justify-content: center; }
   .toast .fill-btn { background: var(--primary); color: #fff; padding: 5px 11px; border-radius: 8px; }
   .step-chip:focus-visible, .seg button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .plan-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .plan-row:last-child { border-bottom: none; }
+  .plan-name { font-weight: 600; font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+  .plan-name small { display: block; color: var(--text-muted); font-weight: 500; font-size: 12px; }
+  .plan-row .seg { flex: 0 0 auto; }
+  .plan-row .seg button { padding: 7px 12px; }
+  .sched-preview .warn { color: var(--danger); font-weight: 600; display: block; }
+  .plan-head { font-weight: 700; padding-top: 8px !important; }
+  @media (max-width: 480px) { .plan-row { flex-direction: column; align-items: stretch; } .plan-row .seg button { flex: 1; } }
 </style>
 </head>
 <body>
@@ -624,6 +634,10 @@
       </button>
       <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="btn btn-ghost" id="planBtn" title="Build a full study plan from your exam date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg>
+        Smart Plan
       </button>
       <button class="btn btn-primary" id="newSubjectBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -875,7 +889,7 @@
         <h4>How it works</h4>
         <ol class="guide-steps">
           <li><div><b>Add a subject</b>Tap <i>New Subject</i>, name it and say how many lectures it has. Add an exam date and the app tells you how many lectures a day you need. Lecture titles can be pasted in as a list later.</div></li>
-          <li><div><b>Set target dates</b>Pick a date on the first lecture, then tap <i>+1 day</i>, <i>+2 days</i> or <i>+3 days</i> and every later lecture in that subject is filled in. For more control (only Mon, Wed, Fri; two lectures a day; spread evenly until your exam) open <i>Schedule dates</i> inside a subject.</div></li>
+          <li><div><b>Set target dates</b>Pick a date on the first lecture, then tap <i>+1 day</i>, <i>+2 days</i> or <i>+3 days</i> and every later lecture in that subject is filled in. For more control (only Mon, Wed, Fri; two lectures a day; spread evenly until your exam) open <i>Schedule dates</i> inside a subject. Or tap <i>Smart Plan</i>: give your last exam date, say which subjects are weak, and it dates every lecture and sets your revision window.</div></li>
           <li><div><b>Study</b>Press the ▶ button on a lecture to start a focus timer. The time is saved against that lecture. Add notes, a priority or a star to anything that matters.</div></li>
           <li><div><b>Tick it off</b>Check the box when you finish. Finished lectures count towards your progress, your daily streak and your daily goal.</div></li>
           <li><div><b>Revise</b>Finished lectures come back after 1, 3, 7, 14 and 30 days. When you see <i>Revise now</i>, review the lecture and tap the badge.</div></li>
@@ -899,6 +913,35 @@
       </section>
     </div>
     <div class="modal-foot"><button type="button" class="btn btn-primary" id="guideClose">Start tracking</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="planOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+    <div class="modal-head"><h3 id="planTitle">Smart Plan</h3><p>Give your exam date and rate each subject. The plan dates every pending lecture, gives weak subjects more urgency, and keeps days free for revision.</p></div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="field"><label for="planLast">Last exam date</label><input type="date" id="planLast"></div>
+        <div class="field"><label for="planStart">Start studying on</label><input type="date" id="planStart"></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label for="planPer">Lectures per day</label><input type="number" id="planPer" min="1" max="20" value="2"></div>
+        <div class="field"><label for="planBuf">Revision days before exam</label><input type="number" id="planBuf" min="0" max="90" value="7"></div>
+      </div>
+      <div class="field"><label>Rest days (no new lectures)</label>
+        <div class="step-chips">
+          <button type="button" class="step-chip" data-r="1">Mon</button><button type="button" class="step-chip" data-r="2">Tue</button><button type="button" class="step-chip" data-r="3">Wed</button><button type="button" class="step-chip" data-r="4">Thu</button><button type="button" class="step-chip" data-r="5">Fri</button><button type="button" class="step-chip" data-r="6">Sat</button><button type="button" class="step-chip" data-r="0">Sun</button>
+        </div>
+      </div>
+      <div class="field"><label>How strong are you in each subject?</label><div id="planSubjects"></div></div>
+      <label class="check-row"><input type="checkbox" id="planWeak" checked> Mark lectures of weak subjects as High priority</label>
+      <label class="check-row"><input type="checkbox" id="planReplace" checked> Replace target dates I already set</label>
+      <div class="field"><label>Your plan</label><div class="sched-preview" id="planPreview"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-ghost" id="planCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="planApply">Apply plan</button>
+    </div>
   </div>
 </div>
 
@@ -1067,6 +1110,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
       name: String(s.name || 'Untitled Subject').slice(0, 200),
       colorIndex: Number.isInteger(s.colorIndex) && s.colorIndex >= 0 ? s.colorIndex : Math.floor(Math.random() * SUBJECT_COLORS.length),
       examDate: cleanDate(s.examDate),
+      strength: [1, 2, 3].includes(s.strength) ? s.strength : 0,
+      finishBy: cleanDate(s.finishBy), revFrom: cleanDate(s.revFrom),
       lectures: Array.isArray(s.lectures) ? s.lectures.filter(l => l && typeof l === 'object').map(normalizeLecture) : []
     };
   }
@@ -1311,7 +1356,7 @@ const FIREBASE_SDK_VERSION = '10.12.2';
               <div class="subject-meta">
                 <span>${done} of ${total} completed${complete ? ' · 🎉' : ''}</span>
                 ${attn ? `<span class="attention-badge">⚠ ${attn} due</span>` : ''}
-                ${examChip(s)}${studyChip(s)}
+                ${examChip(s)}${planChip(s)}${studyChip(s)}
               </div>
             </div>
             <div class="subject-actions">
@@ -1877,6 +1922,7 @@ const FIREBASE_SDK_VERSION = '10.12.2';
     }
     if (e.key === 'Escape') {
       if (guideOverlay.classList.contains('open')) { closeGuide(); return; }
+      if (planOverlay.classList.contains('open')) { closePlan(); return; }
       if (schOverlay.classList.contains('open')) { closeSched(); return; }
       if (shortcutsOverlay.classList.contains('open')) { closeShortcuts(); return; }
       if (authOverlay.classList.contains('open')) { closeAuth(); return; }
@@ -2406,6 +2452,11 @@ const FIREBASE_SDK_VERSION = '10.12.2';
       return '<div class="ag-item"><span class="ag-dot" style="background:' + SUBJECT_COLORS[s.colorIndex % SUBJECT_COLORS.length][0] + '"></span><div class="ag-main"><div class="ag-title">' + esc(s.name) + '</div><div class="ag-sub">' +
         (rem ? rem + ' lecture' + (rem > 1 ? 's' : '') + ' left' + (d > 0 ? ' · ~' + (rem / d).toFixed(1) + '/day needed' : '') : 'All lectures complete ✓') +
         '</div></div><span class="ag-when ' + (d <= 7 ? 'today' : '') + '">' + (d === 0 ? 'Today' : 'in ' + d + 'd') + ' · ' + esc(niceDay(s.examDate)) + '</span></div>';
+    }).join(''));
+    const plans = state.subjects.filter(s => s.finishBy && s.lectures.some(l => !l.done));
+    if (plans.length) html += agPanel('🧭', 'Study plan', plans.length, plans.map(s => {
+      const d = diffDays(t, s.finishBy);
+      return '<div class="ag-item"><span class="ag-dot" style="background:' + SUBJECT_COLORS[s.colorIndex % SUBJECT_COLORS.length][0] + '"></span><div class="ag-main"><div class="ag-title">' + esc(s.name) + '</div><div class="ag-sub">Syllabus done by ' + esc(niceDay(s.finishBy)) + (s.revFrom ? ' · revision from ' + esc(niceDay(s.revFrom)) : '') + '</div></div><span class="ag-when ' + (d < 0 ? 'over' : d <= 3 ? 'today' : '') + '">' + (d < 0 ? (-d) + 'd behind' : d === 0 ? 'Today' : 'in ' + d + 'd') + '</span></div>';
     }).join(''));
     if (!html) html = '<section class="panel"><div class="ag-empty">🎉 Nothing scheduled. Set <b>target dates</b> on lectures (or an <b>exam date</b> on a subject) and they will show up here.</div></section>';
     agendaView.innerHTML = html;
@@ -2988,6 +3039,133 @@ const FIREBASE_SDK_VERSION = '10.12.2';
   });
   document.getElementById('schedCancel').addEventListener('click', closeSched);
   schApply.addEventListener('click', applySched);
+
+  // ---------- Smart Plan ----------
+  const planOverlay = document.getElementById('planOverlay'), plLast = document.getElementById('planLast'), plStart = document.getElementById('planStart');
+  const plPer = document.getElementById('planPer'), plBuf = document.getElementById('planBuf'), plWeak = document.getElementById('planWeak'), plReplace = document.getElementById('planReplace');
+  const plSubjects = document.getElementById('planSubjects'), plPreview = document.getElementById('planPreview'), plApply = document.getElementById('planApply');
+  const STR_NAMES = { 1: 'Weak', 2: 'OK', 3: 'Strong' }, STR_W = { 1: 1.6, 2: 1, 3: 0.7 };
+  let pl = null;
+
+  function planChip(s) {
+    if (!s.finishBy) return '';
+    const t = todayISO();
+    let out = '';
+    if (s.lectures.some(l => !l.done)) {
+      const d = diffDays(t, s.finishBy);
+      out += '<span class="exam-chip ' + (d <= 3 ? 'soon' : '') + '" title="Planned end of the first pass: ' + esc(s.finishBy) + '">📘 ' +
+        (d < 0 ? 'Syllabus ' + (-d) + 'd behind plan' : d === 0 ? 'Syllabus due today' : 'Syllabus done in ' + d + 'd') + '</span>';
+    }
+    if (s.revFrom && (!s.examDate || s.examDate >= t)) out += '<span class="exam-chip" title="Final revision window">🔁 ' + (s.revFrom > t ? 'Revision from ' + esc(niceDay(s.revFrom)) : 'Revision phase') + '</span>';
+    return out;
+  }
+  function readPlan() {
+    return {
+      start: cleanDate(plStart.value) || todayISO(), last: cleanDate(plLast.value),
+      per: Math.min(20, Math.max(1, parseInt(plPer.value, 10) || 1)), buf: Math.min(90, Math.max(0, parseInt(plBuf.value, 10) || 0)),
+      rest: pl.rest, str: pl.str, replace: plReplace.checked, weakHigh: plWeak.checked
+    };
+  }
+  // Day-by-day planner: each study day, pick the subject that is most urgent
+  // (lectures left / study days left before its revision window) x weakness weight.
+  function makePlan(c) {
+    const res = { ok: false, msg: '', warn: [], subs: [], total: 0, cap: c.per };
+    if (!c.last) { res.msg = 'Pick your last exam date.'; return res; }
+    if (c.last < c.start) { res.msg = 'The exam date must be after the start date.'; return res; }
+    if (c.rest.length >= 7) { res.msg = 'Leave at least one study day.'; return res; }
+    const days = [];
+    for (let i = 0; i < 900 && days.length < 400; i++) { const d = addDaysISO(c.start, i); if (!c.rest.includes(parseISO(d).getDay())) days.push(d); }
+    const subs = state.subjects.filter(s => c.str[s.id]).map(s => ({ s, pend: s.lectures.filter(l => !l.done && (c.replace || !l.targetDate)) })).filter(x => x.pend.length);
+    if (!subs.length) { res.msg = 'Nothing to plan: every lecture is done or already dated.'; return res; }
+    subs.forEach(x => {
+      x.exam = (x.s.examDate && x.s.examDate >= c.start && x.s.examDate <= c.last) ? x.s.examDate : c.last;
+      x.dl = addDaysISO(x.exam, -c.buf);
+      x.str = c.str[x.s.id] || 2; x.w = STR_W[x.str]; x.i = 0; x.dates = [];
+      x.dlIdx = -1; days.forEach((d, j) => { if (d <= x.dl) x.dlIdx = j; });
+    });
+    const total = subs.reduce((a, x) => a + x.pend.length, 0);
+    const W = Math.max(1, Math.max.apply(null, subs.map(x => x.dlIdx)) + 1);
+    let cap = c.per;
+    if (subs.some(x => x.dlIdx < 0)) res.warn.push('Some exams are too close for ' + c.buf + ' revision days. Lower the revision days or start sooner.');
+    if (total > W * cap) { cap = Math.ceil(total / W); res.warn.push('Not enough days for ' + c.per + ' a day. The plan needs ' + cap + ' a day.'); }
+    res.cap = cap; res.total = total;
+    let left = total;
+    for (let j = 0; j < days.length && left > 0; j++) {
+      const used = {};
+      for (let n = 0; n < cap && left > 0; n++) {
+        let best = null, bs = -1;
+        subs.forEach(x => {
+          if (x.i >= x.pend.length) return;
+          const sc = (x.pend.length - x.i) / Math.max(1, x.dlIdx - j + 1) * x.w * Math.pow(0.6, used[x.s.id] || 0);
+          if (sc > bs) { bs = sc; best = x; }
+        });
+        best.dates.push(days[j]); best.i++; used[best.s.id] = (used[best.s.id] || 0) + 1; left--;
+      }
+    }
+    if (left > 0) { res.msg = 'Too many lectures for the dates given. Move the exam date later.'; return res; }
+    subs.forEach(x => {
+      x.finish = x.dates[x.dates.length - 1]; x.revFrom = addDaysISO(x.finish, 1);
+      if (x.finish >= x.exam) res.warn.push(x.s.name + ': the first pass ends on or after the exam.');
+      else if (x.finish > x.dl) res.warn.push(x.s.name + ': less than ' + c.buf + ' days left for revision.');
+    });
+    res.subs = subs; res.ok = true;
+    return res;
+  }
+  function paintPlan() {
+    if (!pl) return;
+    planOverlay.querySelectorAll('[data-str]').forEach(b => b.classList.toggle('active', pl.str[b.dataset.sid] === Number(b.dataset.str)));
+    planOverlay.querySelectorAll('[data-r]').forEach(b => b.classList.toggle('active', pl.rest.includes(Number(b.dataset.r))));
+    const r = makePlan(readPlan());
+    if (!r.ok) plPreview.innerHTML = '<div class="more">' + esc(r.msg) + '</div>';
+    else plPreview.innerHTML = '<div class="plan-head">' + r.total + ' lectures, up to ' + r.cap + ' a day</div>' +
+      r.warn.map(w => '<div class="warn">⚠ ' + esc(w) + '</div>').join('') +
+      r.subs.map(x => '<div><span>' + esc(x.s.name) + ' · ' + STR_NAMES[x.str] + '</span><span class="when">done by ' + esc(niceDay(x.finish)) + '</span></div>' +
+        '<div class="more"><span>Revision</span><span class="when">' + esc(niceDay(x.revFrom)) + ' to ' + esc(niceDay(addDaysISO(x.exam, -1))) + '</span></div>').join('');
+    plApply.disabled = !r.ok;
+  }
+  function openPlan() {
+    const subs = state.subjects.filter(s => s.lectures.some(l => !l.done));
+    if (!subs.length) { toast('Add a subject with pending lectures first'); return; }
+    const fut = state.subjects.map(s => s.examDate).filter(d => d && d >= todayISO()).sort();
+    pl = { str: {}, rest: [] };
+    subs.forEach(s => { pl.str[s.id] = s.strength || 2; });
+    plStart.value = todayISO(); plLast.value = fut.length ? fut[fut.length - 1] : '';
+    plPer.value = state.settings.dailyGoal; plBuf.value = 7; plWeak.checked = true; plReplace.checked = true;
+    plSubjects.innerHTML = subs.map(s => '<div class="plan-row"><div class="plan-name">' + esc(s.name) + '<small>' + s.lectures.filter(l => !l.done).length + ' to do</small></div><div class="seg">' +
+      [1, 2, 3].map(k => '<button type="button" data-sid="' + esc(s.id) + '" data-str="' + k + '">' + STR_NAMES[k] + '</button>').join('') + '</div></div>').join('');
+    paintPlan();
+    planOverlay.classList.add('open');
+  }
+  function closePlan() { planOverlay.classList.remove('open'); pl = null; }
+  function applyPlan() {
+    if (!pl) return;
+    const c = readPlan(), r = makePlan(c);
+    if (!r.ok) return;
+    const snap = r.subs.map(x => ({ s: x.s, ex: x.s.examDate, st: x.s.strength, fb: x.s.finishBy, rf: x.s.revFrom, lec: x.s.lectures.map(l => [l, l.targetDate, l.priority]) }));
+    let lastDay = '';
+    r.subs.forEach(x => {
+      x.pend.forEach((l, i) => { l.targetDate = x.dates[i]; if (c.weakHigh && x.str === 1) l.priority = 3; });
+      x.s.strength = x.str; x.s.finishBy = x.finish; x.s.revFrom = x.revFrom;
+      if (!x.s.examDate) x.s.examDate = c.last;
+      if (x.finish > lastDay) lastDay = x.finish;
+    });
+    save(); render(); closePlan();
+    toast('Plan ready: ' + r.total + ' lectures dated, syllabus done by ' + niceDay(lastDay), () => {
+      snap.forEach(z => { z.s.examDate = z.ex; z.s.strength = z.st; z.s.finishBy = z.fb; z.s.revFrom = z.rf; z.lec.forEach(a => { a[0].targetDate = a[1]; a[0].priority = a[2]; }); });
+      save(); render();
+    });
+  }
+  planOverlay.addEventListener('input', paintPlan);
+  planOverlay.addEventListener('click', e => {
+    if (e.target === planOverlay) { closePlan(); return; }
+    if (!pl) return;
+    const sb = e.target.closest('[data-str]'), rb = e.target.closest('[data-r]');
+    if (sb) { pl.str[sb.dataset.sid] = Number(sb.dataset.str); paintPlan(); }
+    else if (rb) { const n = Number(rb.dataset.r); pl.rest = pl.rest.includes(n) ? pl.rest.filter(x => x !== n) : pl.rest.concat(n); paintPlan(); }
+  });
+  document.getElementById('planBtn').addEventListener('click', openPlan);
+  document.getElementById('planCancel').addEventListener('click', closePlan);
+  plApply.addEventListener('click', applyPlan);
 
   // ---------- welcome guide ----------
   const GUIDE_KEY = 'lecture_tracker_guide_seen_v1';

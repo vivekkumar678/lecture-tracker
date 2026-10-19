@@ -1,6 +1,6 @@
 /* Lecture Tracker service worker — network first, falls back to the cached copy when offline.
    Bump CACHE_VERSION whenever you upload a new index.html so phones pick it up. */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const CACHE = 'lecture-tracker-' + CACHE_VERSION;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;          // Firebase / Google requests go straight to the network
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); return res; })
       .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
   );
