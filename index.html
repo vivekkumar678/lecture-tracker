@@ -192,6 +192,35 @@
   .show-more-row { display:flex; gap:8px; flex-wrap:wrap; padding:8px 10px 4px; }
   .subject-body-inner { contain: content; }
 
+  /* ===== CALENDAR ===== */
+  .cal-wrap { display:grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap:20px; align-items:start; }
+  .cal-head { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .cal-head h2 { flex:1; margin:0; font-size:17px; }
+  .cal-dow, .cal-grid { display:grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap:6px; }
+  .cal-dow span { text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color: var(--text-soft); padding-bottom:4px; }
+  .cal-cell { position:relative; min-height:64px; border:1px solid var(--border-soft); border-radius:10px; background: var(--surface-2); padding:6px 7px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; transition: border-color .12s, background .12s; }
+  .cal-cell.blank { border:none; background:transparent; }
+  button.cal-cell:hover { border-color: var(--primary); }
+  .cal-cell.today .cal-d { background: var(--primary); color:#fff; }
+  .cal-cell.sel { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 2px var(--primary-soft); }
+  .cal-cell.late { background: var(--danger-soft); }
+  .cal-cell.clear { background: var(--success-soft); }
+  .cal-d { font-size:12.5px; font-weight:700; width:22px; height:22px; border-radius:50%; display:grid; place-items:center; }
+  .cal-n { position:absolute; top:6px; right:7px; font-size:11.5px; font-weight:800; color: var(--primary); }
+  .cal-cell.late .cal-n { color: var(--danger); }
+  .cal-cell.clear .cal-n { color: var(--success); }
+  .cal-dots { display:flex; gap:3px; min-height:7px; }
+  .cal-dots i { width:7px; height:7px; border-radius:50%; display:block; }
+  .cal-sum { font-size:14px; color: var(--text-muted); margin:4px 0 14px; }
+  .cal-sum b { color: var(--text); }
+  .cal-sub { display:flex; align-items:center; gap:10px; margin:16px 0 4px; font-size:14px; font-weight:700; }
+  .cal-sub button { font-weight:700; text-align:left; }
+  .cal-sub button:hover { color: var(--primary); }
+  .cal-sub small { margin-left:auto; font-size:12px; font-weight:600; color: var(--text-muted); }
+  .cal-kicker { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color: var(--text-soft); margin:18px 0 2px; }
+  @media (max-width: 900px) { .cal-wrap { grid-template-columns: 1fr; } }
+  @media (max-width: 480px) { .cal-cell { min-height:50px; padding:4px 5px; } .cal-grid, .cal-dow { gap:4px; } .cal-n { top:4px; right:5px; } }
+
   /* ===== DASHBOARD ===== */
   .dash-hero {
     display:grid; grid-template-columns: 1fr; gap:20px;
@@ -941,6 +970,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
         <span>Subjects</span>
       </button>
+      <button class="nav-item" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        <span>Calendar</span>
+      </button>
       <button class="nav-item" data-view="agenda">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
         <span>Agenda</span>
@@ -1057,6 +1090,7 @@
       </section>
 
       <!-- AGENDA -->
+      <section id="calendarView" class="page-view hidden view"></section>
       <section id="agendaView" class="page-view hidden view"></section>
 
       <!-- INSIGHTS -->
@@ -1098,6 +1132,14 @@
         </div>
 
         <div class="settings-section">
+          <h3>Help</h3>
+          <div class="btn-row">
+            <button type="button" class="btn btn-ghost" id="setGuide">How it works</button>
+            <button type="button" class="btn btn-ghost" id="setShortcuts">Keyboard shortcuts</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3>Share</h3>
           <p class="field-hint" style="margin-bottom:16px">Get a summary of your progress or a printable report.</p>
           <div class="btn-row">
@@ -1119,6 +1161,10 @@
   <button class="bottom-nav-item" data-view="subjects">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
     <span>Subjects</span>
+  </button>
+  <button class="bottom-nav-item" data-view="calendar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+    <span>Calendar</span>
   </button>
   <button class="bottom-nav-item" data-view="agenda">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -1202,7 +1248,7 @@
         <div class="shortcut-row"><span>Focus search</span><span class="kbd">/</span></div>
         <div class="shortcut-row"><span>Toggle expand all</span><span><span class="kbd">Ctrl</span> <span class="kbd">E</span></span></div>
         <div class="shortcut-row"><span>Show shortcuts</span><span class="kbd">?</span></div>
-        <div class="shortcut-row"><span>Pages: Dashboard / Subjects / Agenda / Insights / Settings</span><span><span class="kbd">1</span>–<span class="kbd">5</span></span></div>
+        <div class="shortcut-row"><span>Pages: Dashboard / Subjects / Calendar / Agenda / Insights / Settings</span><span><span class="kbd">1</span>–<span class="kbd">6</span></span></div>
         <div class="shortcut-row"><span>Start focus / pause / resume</span><span class="kbd">F</span></div>
         <div class="shortcut-row"><span>Close / blur</span><span class="kbd">Esc</span></div>
       </div>
@@ -1280,21 +1326,33 @@
       <section>
         <h4>How it works</h4>
         <ol class="guide-steps">
-          <li><div><b>Add a subject</b>Tap <i>New Subject</i>, name it and say how many lectures it has. You can add more later from the pencil icon or <i>Add many</i>. Add an exam date and the app tells you how many lectures a day you need.</div></li>
-          <li><div><b>Set target dates</b>Pick a date on the first lecture, then choose how many lectures per day (1, 2, 3… up to 20) and how often to study. Or tap <i>Smart Plan</i> to auto-schedule everything from your exam date.</div></li>
-          <li><div><b>Study</b>Press the ▶ button on a lecture to start a focus timer. Time is saved against that lecture. Add notes, a priority or a star to anything that matters.</div></li>
+          <li><div><b>Add a subject</b>Tap <i>New Subject</i>, name it and say how many lectures it has (0 is fine, there is no upper limit). Add an exam date and the app tells you how many lectures a day you need.</div></li>
+          <li><div><b>Set target dates</b>Pick a date on any lecture, or use <i>Schedule dates</i> on a subject to spread lectures by days, weekdays or up to a finish date. <i>Smart Plan</i> in the top bar dates every pending lecture of every subject from your exam date and keeps days free for revision.</div></li>
+          <li><div><b>Check your day</b>Open <i>Calendar</i>, tap any date and see how many lectures you must watch that day and from which subjects. Tick them off right there or start a focus timer.</div></li>
+          <li><div><b>Study</b>Press the ▶ button on a lecture to start a focus timer. Time is saved against that lecture. Add notes, a priority flag or a star to anything that matters.</div></li>
           <li><div><b>Tick it off</b>Check the box when you finish. Finished lectures count towards your progress, streak and daily goal.</div></li>
           <li><div><b>Revise</b>Finished lectures come back after 1, 3, 7, 14 and 30 days. Tap <i>Revise now</i> when it appears.</div></li>
         </ol>
+      </section>
+      <section>
+        <h4>Editing subjects and lectures</h4>
+        <ul class="guide-list">
+          <li><b>Change a subject</b> — tap the pencil icon to rename it, change colour, exam date, strength or revision dates, and to add more lectures at the end (with optional dates).</li>
+          <li><b>Add lectures any time</b> — use <i>Add lecture</i>, <i>Add many</i> (type a number) or <i>Paste list</i> (one title per line) inside an open subject.</li>
+          <li><b>Edit a lecture</b> — click its title to rename it. Use the flag for priority, the note icon for notes, the star to favourite and the × to delete.</li>
+          <li><b>Long subjects</b> — 60 lectures show at a time. Use <i>Show more</i> or <i>Show all</i> at the bottom of the list.</li>
+          <li><b>Mistakes</b> — most actions show an <i>Undo</i> button for a few seconds.</li>
+        </ul>
       </section>
       <section>
         <h4>Where to look</h4>
         <ul class="guide-list">
           <li><b>Dashboard</b> — your greeting, stats, up-next lecture and what needs attention.</li>
           <li><b>Subjects</b> — every subject and lecture with search, filters and sorting.</li>
+          <li><b>Calendar</b> — a month view. Numbers on each day are lectures still to watch; red means overdue, green means all done. Tap a day for the list by subject.</li>
           <li><b>Agenda</b> — grouped lists of overdue, due today, due soon, revisions and exams.</li>
-          <li><b>Insights</b> — streak, activity map, and study time.</li>
-          <li><b>Settings</b> — daily goal, timers, accent colour and sharing.</li>
+          <li><b>Insights</b> — streak, activity map and study time.</li>
+          <li><b>Settings</b> — daily goal, timers, accent colour, help and sharing.</li>
         </ul>
       </section>
       <section>
@@ -1303,6 +1361,7 @@
           <li>Everything saves in this browser automatically. Sign in from the sidebar to sync across devices.</li>
           <li>Install as an app by choosing <i>Add to Home Screen</i> from your browser menu.</li>
           <li>The two sample subjects can be deleted with the bin icon whenever you like.</li>
+          <li>Keys <b>1</b> to <b>6</b> switch pages, <b>N</b> adds a subject and <b>?</b> shows all shortcuts.</li>
         </ul>
       </section>
     </div>
@@ -2179,8 +2238,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
     if (e.key === '/') { e.preventDefault(); if (state.view !== 'subjects') { state.view = 'subjects'; render(); setTimeout(() => searchInput.focus(), 100); } else searchInput.focus(); }
     else if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); document.getElementById('newSubjectBtn').click(); }
     else if (e.key === '?') { e.preventDefault(); openShortcuts(); }
-    else if (!e.ctrlKey && !e.metaKey && !e.altKey && ['1','2','3','4','5'].includes(e.key)) {
-      state.view = ['dashboard','subjects','agenda','insights','settings'][Number(e.key) - 1]; render();
+    else if (!e.ctrlKey && !e.metaKey && !e.altKey && ['1','2','3','4','5','6'].includes(e.key)) {
+      state.view = ['dashboard','subjects','calendar','agenda','insights','settings'][Number(e.key) - 1]; render();
     }
     else if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault(); if (focus.mode === 'idle') startFocus(null, null); else toggleFocusPause();
@@ -2597,11 +2656,11 @@ const FIREBASE_SDK_VERSION = '10.12.2';
   }
 
   // ---------- RENDER ----------
-  const PAGE_TITLES = { dashboard: 'Dashboard', subjects: 'Subjects', agenda: 'Agenda', insights: 'Insights', settings: 'Settings' };
+  const PAGE_TITLES = { dashboard: 'Dashboard', subjects: 'Subjects', calendar: 'Calendar', agenda: 'Agenda', insights: 'Insights', settings: 'Settings' };
   function render() {
     updateStats(); renderHero();
     const v = state.view;
-    ['dashboard','subjects','agenda','insights','settings'].forEach(view => {
+    ['dashboard','subjects','calendar','agenda','insights','settings'].forEach(view => {
       const el = document.getElementById(view + 'View');
       if (el) el.classList.toggle('hidden', v !== view);
     });
@@ -2613,10 +2672,105 @@ const FIREBASE_SDK_VERSION = '10.12.2';
 
     if (v === 'dashboard') renderDashboard();
     else if (v === 'subjects') renderSubjects();
+    else if (v === 'calendar') renderCalendar();
     else if (v === 'agenda') renderAgenda();
     else if (v === 'insights') renderInsights();
     else if (v === 'settings') refreshSettingsPage();
   }
+
+  // ---------- CALENDAR ----------
+  const calendarView = document.getElementById('calendarView');
+  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  function calMap() {
+    const m = {}, g = d => m[d] || (m[d] = { due: [], done: [], rev: [] });
+    allLectures().forEach(x => {
+      const l = x.l;
+      if (l.targetDate) g(l.targetDate).due.push(x);
+      if (l.done && l.completedDate && l.completedDate !== l.targetDate) g(l.completedDate).done.push(x);
+      const nx = nextRevision(l); if (nx) g(nx).rev.push(x);
+    });
+    return m;
+  }
+  function calRow(x, mode) {
+    const l = x.l;
+    const left = mode === 'rev'
+      ? '<button type="button" class="tool-btn" data-action="cal-revise" title="Mark as revised">🔁</button>'
+      : `<button type="button" class="checkbox ${l.done ? 'checked' : ''}" data-action="cal-done" role="checkbox" aria-checked="${l.done}" title="${l.done ? 'Mark as not done' : 'Mark as done'}">${CHECK_SVG}</button>`;
+    return `<div class="ag-item" data-subject-id="${esc(x.s.id)}" data-lecture-id="${esc(l.id)}">${left}` +
+      `<div class="ag-main"><div class="ag-title"${l.done && mode !== 'rev' ? ' style="text-decoration:line-through;opacity:.6"' : ''}>${esc(l.title)}</div>${l.priority === 3 ? '<div class="ag-sub">High priority</div>' : ''}</div>` +
+      `<button type="button" class="tool-btn" data-action="cal-focus" title="Start focus timer">${SVG_PLAY}</button></div>`;
+  }
+  function calGroup(items, mode) {
+    const by = new Map();
+    items.forEach(x => { let e = by.get(x.s.id); if (!e) by.set(x.s.id, e = { s: x.s, list: [] }); e.list.push(x); });
+    return Array.from(by.values()).map(e => {
+      const c1 = SUBJECT_COLORS[e.s.colorIndex % SUBJECT_COLORS.length][0];
+      const left = e.list.filter(x => !x.l.done).length;
+      const meta = mode === 'rev' ? e.list.length + ' to revise' : (left ? left + ' to watch' : 'all done') + (left !== e.list.length ? ' · ' + (e.list.length - left) + '/' + e.list.length + ' done' : '');
+      return `<div class="cal-sub"><span class="ag-dot" style="background:${c1}"></span><button type="button" data-action="cal-subject" data-subject-id="${esc(e.s.id)}">${esc(e.s.name)}</button><small>${meta}</small></div>` +
+        e.list.map(x => calRow(x, mode)).join('');
+    }).join('');
+  }
+  function calDetail(sel, e, t) {
+    e = e || { due: [], done: [], rev: [] };
+    const pend = e.due.filter(x => !x.l.done);
+    const subs = new Set(pend.map(x => x.s.id)).size;
+    let html = `<h2>${esc(niceDay(sel))}${sel === t ? ' <span class="count-pill">Today</span>' : ''}</h2>`;
+    if (!e.due.length) html += '<div class="cal-sum">No lectures scheduled for this day.</div>';
+    else if (!pend.length) html += `<div class="cal-sum">🎉 All <b>${e.due.length}</b> scheduled lecture${e.due.length > 1 ? 's are' : ' is'} done.</div>`;
+    else html += `<div class="cal-sum"><b>${pend.length}</b> lecture${pend.length > 1 ? 's' : ''} to watch across <b>${subs}</b> subject${subs > 1 ? 's' : ''}${sel < t ? ' · <span style="color:var(--danger);font-weight:700">overdue</span>' : ''}${e.due.length > pend.length ? ' · ' + (e.due.length - pend.length) + ' already done' : ''}.</div>`;
+    html += calGroup(e.due, 'due');
+    if (e.rev.length) html += '<div class="cal-kicker">Revisions due</div>' + calGroup(e.rev, 'rev');
+    if (e.done.length) html += '<div class="cal-kicker">Also completed this day</div>' + calGroup(e.done, 'due');
+    return html;
+  }
+  function renderCalendar() {
+    const t = todayISO(), m = calMap();
+    if (!state.calSel) state.calSel = t;
+    if (!state.calMonth) state.calMonth = state.calSel.slice(0, 7);
+    const parts = state.calMonth.split('-').map(Number), Y = parts[0], M = parts[1];
+    const lead = (new Date(Y, M - 1, 1).getDay() + 6) % 7, dim = new Date(Y, M, 0).getDate();
+    const title = new Date(Y, M - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const mm = String(M).padStart(2, '0');
+    let cells = '<div class="cal-cell blank"></div>'.repeat(lead);
+    for (let d = 1; d <= dim; d++) {
+      const iso = Y + '-' + mm + '-' + String(d).padStart(2, '0'), e = m[iso];
+      let pend = 0, total = 0, dots = '';
+      if (e) {
+        const seen = new Set();
+        e.due.forEach(x => {
+          total++; if (!x.l.done) pend++;
+          if (seen.size < 4 && !seen.has(x.s.id)) { seen.add(x.s.id); dots += `<i style="background:${SUBJECT_COLORS[x.s.colorIndex % SUBJECT_COLORS.length][0]}"></i>`; }
+        });
+      }
+      const cls = 'cal-cell' + (iso === t ? ' today' : '') + (iso === state.calSel ? ' sel' : '') + (pend && iso < t ? ' late' : '') + (total && !pend ? ' clear' : '');
+      cells += `<button type="button" class="${cls}" data-date="${iso}" aria-label="${esc(niceDay(iso))}${total ? ', ' + pend + ' to watch' : ''}"><span class="cal-d">${d}</span>${total ? `<span class="cal-n">${pend || '✓'}</span>` : ''}<span class="cal-dots">${dots}</span></button>`;
+    }
+    const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(x => `<span>${x}</span>`).join('');
+    const chev = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+    calendarView.innerHTML = '<div class="cal-wrap"><section class="panel">' +
+      `<div class="cal-head"><h2>${esc(title)}</h2><button type="button" class="btn btn-ghost btn-sm" data-cal="today">Today</button>` +
+      `<button type="button" class="icon-btn" data-cal="prev" aria-label="Previous month">${chev('m15 18-6-6 6-6')}</button>` +
+      `<button type="button" class="icon-btn" data-cal="next" aria-label="Next month">${chev('m9 18 6-6-6-6')}</button></div>` +
+      `<div class="cal-dow">${dow}</div><div class="cal-grid">${cells}</div></section>` +
+      `<section class="panel">${calDetail(state.calSel, m[state.calSel], t)}</section></div>`;
+  }
+  calendarView.addEventListener('click', e => {
+    const dt = e.target.closest('[data-date]');
+    if (dt) { state.calSel = dt.dataset.date; renderCalendar(); return; }
+    const nav = e.target.closest('[data-cal]');
+    if (nav) {
+      if (nav.dataset.cal === 'today') { state.calSel = todayISO(); state.calMonth = state.calSel.slice(0, 7); }
+      else { const p = state.calMonth.split('-').map(Number), d = new Date(p[0], p[1] - 1 + (nav.dataset.cal === 'next' ? 1 : -1), 1); state.calMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+      renderCalendar(); return;
+    }
+    const b = e.target.closest('[data-action]'); if (!b) return;
+    const row = b.closest('.ag-item'), sid = (row && row.dataset.subjectId) || b.dataset.subjectId, lid = row ? row.dataset.lectureId : null;
+    if (b.dataset.action === 'cal-done') toggleDone(sid, lid);
+    else if (b.dataset.action === 'cal-revise') reviseLecture(sid, lid);
+    else if (b.dataset.action === 'cal-focus') startFocus(sid, lid);
+    else if (b.dataset.action === 'cal-subject') { state.view = 'subjects'; state.expanded[sid] = true; render(); }
+  });
 
   // ---------- AGENDA ----------
   const agendaView = document.getElementById('agendaView');
@@ -3318,6 +3472,8 @@ const FIREBASE_SDK_VERSION = '10.12.2';
   function openGuide() { guideOverlay.classList.add('open'); guideOverlay.querySelector('.modal').scrollTop = 0; }
   function closeGuide() { guideOverlay.classList.remove('open'); try { localStorage.setItem(GUIDE_KEY, '1'); } catch (e) {} }
   document.getElementById('guideBtn').addEventListener('click', openGuide);
+  document.getElementById('setGuide').addEventListener('click', openGuide);
+  document.getElementById('setShortcuts').addEventListener('click', openShortcuts);
   document.getElementById('guideClose').addEventListener('click', closeGuide);
   guideOverlay.addEventListener('click', e => { if (e.target === guideOverlay) closeGuide(); });
 
